@@ -31,6 +31,12 @@ WP-FRONTEND-NEXTJS-MIGRATION
   Move off Streamlit to Next.js on Vercel if/when the app outgrows
   Streamlit's UX ceiling. Only if needed.
 
+WP-DB-MIGRATIONS-CLI
+  Adopt Supabase CLI for proper migration management once schema
+  starts churning. For MVP we run DDL via Supabase SQL Editor and
+  track migration files manually in /migrations. Promote when the
+  manual track-by-git workflow starts feeling fragile.
+
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
 ═══════════════════════════════════════════════════════

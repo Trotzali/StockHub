@@ -37,7 +37,11 @@ LOCKED DECISIONS
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-WP-BOOTSTRAP-REPO-INIT — in progress (this commit)
+WP-DB-SCHEMA-INIT — next, not yet started
+
+Closed this session:
+  WP-BOOTSTRAP-REPO-INIT — 73b2c8d (see _build_log.md)
+  WP-RECONCILE-POST-BOOTSTRAP — this commit
 
 ═══════════════════════════════════════════════════════
 OPEN WPs (BANKED, NOT STARTED)
@@ -69,7 +73,7 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-T1 — bootstrap (WP-BOOTSTRAP-REPO-INIT)
+T1 — idle (just shipped 73b2c8d + reconcile)
 T2 — idle
 T3 — idle
 T4 — idle
@@ -89,3 +93,32 @@ STATE FILES
 - C:\Users\admin\Projects\StockHub\_build_log.md
 - C:\Users\admin\Projects\StockHub\_ideas.md
 - C:\Users\admin\Projects\StockHub\_timeline.md
+
+═══════════════════════════════════════════════════════
+ENVIRONMENT NOTES (Windows 11 + PS 5.1)
+═══════════════════════════════════════════════════════
+
+Permanent gotchas — bake into every CC prompt on this box.
+
+1. git commit messages
+   Multi -m chains with backtick (`) continuation and empty -m ""
+   separators get mangled by PS 5.1 quoting. Use either:
+     - Single -m with embedded \n via $msg = @"...`n...`n..."@ ; git commit -m $msg
+     - git commit -F <tempfile>, removing the tempfile before any push verification
+
+2. File creation with UTF-8
+   `Set-Content -Encoding utf8` writes UTF-8 WITH BOM on PS 5.1.
+   Prefer the Write tool, or use:
+     [System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false))
+
+3. Benign noise to ignore
+   - LF→CRLF warnings on `git add` (Windows core.autocrlf default)
+   - NativeCommandError text on `git push` when stderr is redirected
+     — exit code is authoritative
+
+4. Python
+   Use `python` (3.12, has pip bound). Do NOT use `python3` (3.14, pip not bound).
+
+5. Shell
+   PowerShell 5.1, not Git Bash. Use New-Item / Set-Location / Get-Location
+   for filesystem ops; avoid bash idioms like `mkdir -p` heredocs piped to commands.
