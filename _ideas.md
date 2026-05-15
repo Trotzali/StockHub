@@ -37,6 +37,15 @@ WP-DB-MIGRATIONS-CLI
   track migration files manually in /migrations. Promote when the
   manual track-by-git workflow starts feeling fragile.
 
+WP-DB-RLS-POLICIES
+  Design and apply Row Level Security policies on stocks/prices/signals
+  (and any future tables) for the day we expose data via anon or
+  authenticated keys. Currently RLS is ENABLED on all three tables with
+  NO policies defined — meaning anon/authenticated access returns zero
+  rows by default. Service_role bypasses RLS so backend scripts and
+  Streamlit app (using service_role) work normally. Bank status: blocked
+  until we have a public-facing surface requiring non-service-role access.
+
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
 ═══════════════════════════════════════════════════════
