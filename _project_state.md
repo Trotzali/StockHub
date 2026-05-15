@@ -37,23 +37,28 @@ LOCKED DECISIONS
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-WP-DB-SCHEMA-INIT — next, not yet started
+WP-DEV-ENV-SETUP — queued for next session (fresh chat)
 
-Closed this session:
-  WP-BOOTSTRAP-REPO-INIT — 73b2c8d (see _build_log.md)
-  WP-RECONCILE-POST-BOOTSTRAP — this commit
+Closed in SESSION 1:
+  WP-BOOTSTRAP-REPO-INIT          — 73b2c8d
+  WP-RECONCILE-POST-BOOTSTRAP     — d57dbcd
+  WP-DB-SCHEMA-INIT               — a1d825d  (with RLS amendment)
+  WP-RECONCILE-SESSION-1-CLOSE    — this commit
+
+See _build_log.md for commit details.
 
 ═══════════════════════════════════════════════════════
 OPEN WPs (BANKED, NOT STARTED)
 ═══════════════════════════════════════════════════════
 Foundation (Phase 1, months 1-2):
-  WP-DB-SCHEMA-INIT             — Supabase project + stocks/prices/signals schema
+  WP-DEV-ENV-SETUP              — Python venv, requirements.txt, dotenv loading, smoke test
   WP-DATA-YFINANCE-FETCHER      — Python script: ASX 200 daily OHLC -> Supabase
   WP-DATA-HISTORICAL-BACKFILL   — 5yr historical load
   WP-UI-STREAMLIT-SHELL         — Streamlit app, ticker dropdown, Plotly candlestick
   WP-UI-MA-OVERLAY              — 20/50/200-day MA overlay
 
-Gate order: WP-DB-SCHEMA-INIT gates everything else.
+Schema is live (a1d825d). Next gate: WP-DEV-ENV-SETUP — Python connectivity
+enables all downstream data work.
 
 Signal design (Phase 2, months 2-4):
   WP-SIGNAL-HYPOTHESIS-V1       — one clear hypothesis (leaning earnings surprise + RSI<40 + above 200MA)
