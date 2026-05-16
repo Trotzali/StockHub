@@ -189,13 +189,14 @@ SHIPPED (6 commits):
   a1d825d — WP-DB-SCHEMA-INIT (with RLS amendment)
   16ebfcb — WP-RECONCILE-MILESTONE (mid-session, premature "session close" name)
   1ed6d8b — WP-DEV-ENV-SETUP (after four-round ARM64 odyssey)
-  [actual-close-sha] — WP-RECONCILE-SESSION-1-CLOSE (this commit)
+  401c938 — WP-RECONCILE-SESSION-1-CLOSE (this commit)
 
-HEAD at actual close: [actual-close-sha]
+HEAD at actual close: 401c938
 
-Note: above two placeholders [actual-close-sha] will be patched by the
-next-session-open hygiene step (same pattern as before — reconcile
-can't self-reference).
+Note: the two placeholder slots above were patched to 401c938 by the
+SESSION 2 open hygiene step (WP-HYGIENE-TIMELINE-SHA-BACKFILL —
+same pattern as the 16ebfcb patch earlier in session 1; reconcile
+can't self-reference its own SHA).
 
 DECISIONS LOCKED THIS EXTENSION (additions to prior 16ebfcb block):
   - Architecture: Windows 11 ARM64 (Snapdragon). Permanent ENVIRONMENT NOTE.
