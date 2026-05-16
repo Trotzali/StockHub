@@ -107,9 +107,9 @@ SHIPPED (4 commits):
   73b2c8d — WP-BOOTSTRAP-REPO-INIT
   d57dbcd — WP-RECONCILE-POST-BOOTSTRAP
   a1d825d — WP-DB-SCHEMA-INIT (with RLS amendment)
-  [this] — WP-RECONCILE-SESSION-1-CLOSE
+  16ebfcb — WP-RECONCILE-SESSION-1-CLOSE
 
-HEAD at close: [this commit SHA]
+HEAD at close: 16ebfcb
 
 DECISIONS LOCKED THIS SESSION:
   - Master branch (not main)
@@ -141,3 +141,90 @@ PROCESS NOTES:
   - Working model section 14 amendment protocol exercised cleanly for
     the RLS issue. Pattern: source spec banked in _ideas.md, deviation
     documented in commit message + migration file comment.
+
+═══════════════════════════════════════════════════════
+SESSION 1 — EXTENSION PAST MILESTONE RECONCILE
+═══════════════════════════════════════════════════════
+
+Note: prior reconcile at 16ebfcb labeled itself "SESSION 1 CLOSE"
+but session continued in same chat. Treating 16ebfcb as mid-session
+milestone; this commit is the actual SESSION 1 close.
+
+═══════════════════════════════════════════════════════
+T1 WP-DEV-ENV-SETUP (1ed6d8b) — four rounds
+═══════════════════════════════════════════════════════
+
+Round 1: psycopg2-binary 2.9.12 install
+  Silent sdist fallback. No pg_config on this box. Build fail. STOP.
+
+Round 2: psycopg2-binary==2.9.10 retry
+  Same sdist fallback (no win wheel at that version either). STOP.
+
+Round 3: psycopg[binary] (psycopg3) + --only-binary :all:
+  ResolutionImpossible. --only-binary :all: surfaced the real error:
+  pip walked psycopg-binary 3.0–3.3.4 looking for win_arm64 wheels
+  and found none. ROOT CAUSE: this is a Windows-on-ARM64 (Snapdragon)
+  box. PyPI has no PG-driver wheels for win_arm64 at any version.
+  Architectural pivot: dropped native PG driver, switched to
+  supabase-py over HTTPS/REST.
+
+Round 4: backend+UI stack install
+  Exit 0 — but streamlit silently resolved to 0.8 (2018 release).
+  T1 correctly diagnosed as semantic-failure-disguised-as-success
+  (resolver back-walked streamlit ~7 years to escape pyarrow's
+  win_arm64 wheel gap). Refused to commit a known landmine. STOP.
+
+Final round: backend-only 4-package stack
+  python-dotenv 1.2.2, supabase 2.25.1, pandas 3.0.3, yfinance 1.3.0.
+  All current-stable. Smoke PASSed pre- and post-commit. Shipped as
+  1ed6d8b.
+
+═══════════════════════════════════════════════════════
+SESSION 1 ACTUAL CLOSE — 2026-05-16 AEST
+═══════════════════════════════════════════════════════
+
+SHIPPED (6 commits):
+  73b2c8d — WP-BOOTSTRAP-REPO-INIT
+  d57dbcd — WP-RECONCILE-POST-BOOTSTRAP
+  a1d825d — WP-DB-SCHEMA-INIT (with RLS amendment)
+  16ebfcb — WP-RECONCILE-MILESTONE (mid-session, premature "session close" name)
+  1ed6d8b — WP-DEV-ENV-SETUP (after four-round ARM64 odyssey)
+  [actual-close-sha] — WP-RECONCILE-SESSION-1-CLOSE (this commit)
+
+HEAD at actual close: [actual-close-sha]
+
+Note: above two placeholders [actual-close-sha] will be patched by the
+next-session-open hygiene step (same pattern as before — reconcile
+can't self-reference).
+
+DECISIONS LOCKED THIS EXTENSION (additions to prior 16ebfcb block):
+  - Architecture: Windows 11 ARM64 (Snapdragon). Permanent ENVIRONMENT NOTE.
+  - Pip default: --only-binary :all: always; sanity-check resolved
+    versions before pinning.
+  - DB driver: supabase-py over HTTPS only. No native PG drivers.
+  - UI stack: pyarrow ARM64 wheel gap blocks streamlit. UI WP gated
+    on WP-UI-FRONTEND-STACK-ARM64-RESOLUTION.
+  - .env keys for supabase-py path: SUPABASE_URL +
+    SUPABASE_SERVICE_ROLE_KEY (SUPABASE_DB_* keys retained in .env /
+    .env.example for future direct-SQL escape hatch; unused now).
+
+TERMINAL STATES AT CLOSE:
+  T1 — idle, on a clean tree at HEAD (heavily exercised session;
+       four-round recovery handled cleanly, judgment calls on streamlit
+       silent-downgrade were sound)
+  T2-T5 — never activated this session
+
+IMMEDIATE QUEUE (NEXT SESSION):
+  WP-DATA-YFINANCE-FETCHER — populate stocks + prices tables with
+                              ASX 200 daily OHLC via yfinance.
+
+PROCESS NOTES (additions to prior):
+  - "What architecture is this box" should be in every new-project
+    Phase A bootstrap inventory. Cheap check that would have caught
+    the ARM64 reality four rounds earlier.
+  - Pip's exit 0 is necessary but not sufficient. Resolver back-walks
+    are a real failure mode that --only-binary :all: + manual version
+    sanity-checks catches.
+  - Banking discipline held: WP-UI-FRONTEND-STACK-ARM64-RESOLUTION and
+    WP-DB-DIRECT-SQL-ESCAPE-HATCH captured cleanly without
+    scope-creeping the current WP.

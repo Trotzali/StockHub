@@ -40,3 +40,28 @@ a1d825d — 2026-05-16 — WP-DB-SCHEMA-INIT
     bypasses RLS).
   - _ideas.md: banked WP-DB-RLS-POLICIES for future public surface.
   Gates: d57dbcd.
+
+1ed6d8b — 2026-05-16 — WP-DEV-ENV-SETUP
+  WP-DEV-ENV-SETUP: Python venv + pinned requirements + DB smoke test
+  - .venv/ with Python 3.12 ARM64 (gitignored)
+  - requirements.txt: 4 top-level pins (python-dotenv 1.2.2, supabase
+    2.25.1, pandas 3.0.3, yfinance 1.3.0) + 50 transitives. All ==
+    pinned, all win_arm64 wheels or pure-Python.
+  - scripts/smoke_test_db.py: end-to-end validator via supabase-py
+    with service_role (RLS bypass). PASSed pre- and post-commit:
+    prices, signals, stocks all reachable.
+
+  Closed after four-round wheel-gap odyssey that surfaced the
+  underlying ARM64 platform:
+    R1: psycopg2-binary==2.9.12 → silent sdist, no pg_config
+    R2: psycopg2-binary==2.9.10 → same sdist fallback
+    R3: psycopg[binary] + --only-binary :all: → ResolutionImpossible.
+        Surfaced root cause: win_arm64 has no PG-driver wheels at any
+        version. Pivot to supabase-py.
+    R4: install exit 0 but streamlit silently resolved to 0.8 (2018
+        release). T1 caught semantic-failure-as-success. Dropped
+        streamlit+plotly from WP, banked to UI WP. Recreated venv.
+
+  Banked WPs: WP-UI-FRONTEND-STACK-ARM64-RESOLUTION,
+              WP-DB-DIRECT-SQL-ESCAPE-HATCH.
+  Gates: 16ebfcb.

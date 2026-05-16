@@ -46,6 +46,28 @@ WP-DB-RLS-POLICIES
   Streamlit app (using service_role) work normally. Bank status: blocked
   until we have a public-facing surface requiring non-service-role access.
 
+WP-UI-FRONTEND-STACK-ARM64-RESOLUTION
+  When entering the UI WP arc, first resolve win_arm64 wheel
+  availability for streamlit 1.x's transitive deps (primarily
+  pyarrow). Resolution paths (rough preference order):
+    1. Pin pyarrow to a version with win_arm64 wheels (if one exists)
+    2. Switch UI framework (Gradio, Dash, FastAPI + HTMX) whose deps
+       clear win_arm64 cleanly
+    3. Install x64 Python alongside, run UI process under emulation
+    4. Build pyarrow from source (last resort)
+  DO NOT accept streamlit==0.8 silent-downgrade as a workaround.
+  Gates: WP-UI-STREAMLIT-SHELL (or whatever UI WP we land on).
+
+WP-DB-DIRECT-SQL-ESCAPE-HATCH
+  If a future workload genuinely needs ad-hoc SQL (no current use
+  case demands it — all EOD signal work fits PostgREST + pandas).
+  Resolution options:
+    - Install x64 Python in parallel venv just for batch SQL jobs
+    - Use Supabase Database Functions (RPC) for custom SQL via REST
+    - Wait for a PG driver to ship win_arm64 wheels
+  Banked because we may eventually want server-side aggregation or
+  window functions for heavy backtests.
+
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
 ═══════════════════════════════════════════════════════
