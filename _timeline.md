@@ -407,10 +407,10 @@ PRODUCTION STATE AT CLOSE:
     scripts/backfill_historical.py both consume
     src/data/yfinance_utils.py via sys.path prelude.
 
-HEAD at SESSION 3 close: this commit (see
-`git log -1 --oneline`). Same no-placeholder pattern as
-session-2 close; becomes opportunistic-backfill candidate
-at session-4 reconcile.
+HEAD at SESSION 3 close: 56ddc53 (opportunistic backfill at
+session-4 close — the `git log -1 --oneline` wording was the
+no-placeholder pattern at write time; same pattern as the
+session-2 → session-3 backfill).
 
 TERMINAL STATES AT CLOSE:
   T1 — idle (closed WP-INFRA-SRC-LAYOUT,
@@ -431,3 +431,88 @@ IMMEDIATE QUEUE (SESSION 4):
   WP-DATA-UNIVERSE-ASX200,
   WP-DATA-STOCKS-METADATA-ENRICHMENT,
   WP-INFRA-SCHEDULER, WP-INFRA-SCHEMA-DRIFT-SCRIPT.
+
+
+═══════════════════════════════════════════════════════
+SESSION 4 — 2026-05-18 (AEST)
+═══════════════════════════════════════════════════════
+
+OPEN
+  Opened with HEAD = 56ddc53 (session-3 close).
+  Foundation arc complete. Signal-hypothesis arc opens.
+  Backtest design baseline locked in orchestrator chat at
+  session-3 close: 50/200 SMA, long-only, hold-until-
+  opposite, $10k per ticker, 0.1% brokerage + $0.01
+  slippage per side, B&H baseline gross.
+
+WP-SIGNAL-MA-CROSSOVER-V1 (T1, 00e2141)
+  Phase A surfaced three operational findings: PostgREST
+  1000-row cap requires pagination for full per-ticker
+  reads; tickers carry .AX suffix throughout (.AX -> _AX
+  for CSV filenames); ASCII-only stdout discipline needed
+  to avoid PowerShell cp1252 crashes (probe exit 1 on
+  →). Edge-case amendment added: compute_metrics
+  graceful on trade_count == 0 (genuinely flat universe).
+  Phase B shipped: 10 tickers, 32 trades total, 1066 eval
+  days each (warm-up 200 rows excluded). CBA.AX V-walked
+  by hand — first golden cross 2022-04-06 confirmed,
+  equity-curve start matches MA-200 cutoff 2022-02-25,
+  B&H math reconciled to the cent ($19,617.57). Signal as
+  written refuted: avg alpha -30 percentage points vs
+  B&H; signal beats B&H on 2/10 tickers (CSL.AX +47.6%
+  defensive, WES.AX +17.3% noise). Banked follow-ups:
+  WP-INFRA-YFUTILS-FETCH-PRICES-PAGINATED (consumer count
+  = 1), WP-SIGNAL-MA-CROSSOVER-GRID-V1 (next signal WP),
+  ASCII-only-stdout convention promoted to CLAUDE.md.
+
+PROCESS LEARNINGS
+  - First end-to-end signal-hypothesis backtest. Engine
+    proven; signal refuted as a standalone long-only
+    strategy. The refutation is the win — discipline says
+    test, not test-until-it-works.
+  - Phase A 6-probe investigation paid for itself thrice:
+    pagination requirement, ticker-suffix correction, and
+    ASCII-only discipline all fed straight into Phase B
+    spec. Probe file deleted before report per Rule 0.
+  - compute_metrics zero-trade branch was added defensively
+    on Phase A's recommendation. Did not fire this run (min
+    1 trade) but stays for ASX 200 expansion when a low-
+    volatility ticker might genuinely produce 0 crossovers.
+  - First WP where the data-driven result drives the next
+    WP's design rather than the other way around. Grid
+    sweep + regime-filter ideas surface naturally from the
+    refutation pattern.
+
+═══════════════════════════════════════════════════════
+SESSION 4 CLOSE — 2026-05-18 AEST
+═══════════════════════════════════════════════════════
+
+SHIPPED (1 WP with commit + this reconcile):
+  00e2141 — WP-SIGNAL-MA-CROSSOVER-V1
+
+PRODUCTION STATE AT CLOSE:
+  Supabase: 10 stocks, 12,650 prices, 0 signals (unchanged
+  from session-3 close — V1 backtest produces local CSV
+  outputs in results/ only, no DB writes).
+  Code: scripts/backtest_ma_crossover.py shipped (399
+  lines); inline engine + inline paginated-fetch helper.
+  Engine + helper extraction trigger fires at second
+  consumer (V2 grid sweep, next session).
+
+HEAD at SESSION 4 close: this commit (see
+`git log -1 --oneline`). Same no-placeholder pattern;
+opportunistic-backfill candidate at session-5 reconcile.
+
+TERMINAL STATES AT CLOSE:
+  T1 — idle (closed WP-SIGNAL-MA-CROSSOVER-V1 +
+              WP-RECONCILE-SESSION-4-CLOSE)
+  T2-T5 — idle / spare; not activated this session
+
+IMMEDIATE QUEUE (SESSION 5):
+  WP-SIGNAL-MA-CROSSOVER-GRID-V1 — design conversation
+  in fresh chat. Parameter grid scope, holdout split,
+  optimisation metric, aggregate-only constraint, and
+  the engine-extraction decision (V2 IS the second
+  consumer of both the inline engine and the paginated-
+  fetch helper from 00e2141) settled in that
+  conversation before any Phase A fires.

@@ -37,7 +37,8 @@ LOCKED DECISIONS
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-(between WPs, awaiting SESSION 4 selection)
+WP-SIGNAL-MA-CROSSOVER-GRID-V1 — queued for SESSION 5 design conversation
+(fresh chat). Design questions banked in Foundation list below.
 
 Closed in SESSION 1:
   WP-BOOTSTRAP-REPO-INIT              — 73b2c8d
@@ -66,7 +67,15 @@ Closed in SESSION 3:
                                                   missed files)
   WP-DATA-HISTORICAL-BACKFILL         — def6718  (T2, 5y EOD × 10 blues —
                                                   12,650 rows in prices)
-  WP-RECONCILE-SESSION-3-CLOSE        — (see `git log -1 --oneline`)
+  WP-RECONCILE-SESSION-3-CLOSE        — 56ddc53  (opportunistic backfill
+                                                  at session-4 close)
+
+Closed in SESSION 4:
+  WP-SIGNAL-MA-CROSSOVER-V1           — 00e2141  (T1, engine-first single-
+                                                  signal backtest — engine
+                                                  proven, signal refuted at
+                                                  avg -30% alpha over B&H)
+  WP-RECONCILE-SESSION-4-CLOSE        — (see `git log -1 --oneline`)
 
 See _build_log.md for commit details.
 
@@ -74,6 +83,31 @@ See _build_log.md for commit details.
 OPEN WPs (BANKED, NOT STARTED)
 ═══════════════════════════════════════════════════════
 Foundation (Phase 1, months 1-2):
+  WP-SIGNAL-MA-CROSSOVER-GRID-V1 — Parameter grid sweep of MA crossover family
+                                   on the 10 ASX blue chips. Sequel to
+                                   WP-SIGNAL-MA-CROSSOVER-V1 (00e2141, refuted
+                                   at avg -30% alpha). Settle these in
+                                   SESSION 5 design conversation BEFORE
+                                   Phase A fires:
+                                     - Parameter grid scope: 5-7 (short, long)
+                                       combos, e.g. 10/30, 20/50, 30/100,
+                                       50/100, 50/200. Constraint short < long.
+                                     - Holdout split: single time-based split
+                                       (likely) vs walk-forward (v2-of-v2).
+                                     - Optimisation metric: Sharpe (recommend)
+                                       vs total return vs alpha-over-B&H.
+                                       Report all three regardless.
+                                     - Aggregate vs per-ticker optimisation:
+                                       AGGREGATE only. Per-ticker is curve-
+                                       fitting on 10 tickers × 4y of data —
+                                       banked as anti-pattern in _ideas.md.
+                                     - Second-consumer extraction trigger: V2
+                                       IS the second consumer of the inline
+                                       engine + paginated-fetch helper from
+                                       00e2141. Decide in SESSION 5 design
+                                       whether to extract to src/backtest/ +
+                                       src/data/yfinance_utils.py before V2
+                                       Phase B or fold into V2 itself.
   WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
                                  — Generalize the 3-attempt exponential
                                    backoff currently duplicated as
@@ -89,14 +123,14 @@ Foundation (Phase 1, months 1-2):
                                    GATED ON: WP-UI-FRONTEND-STACK-ARM64-RESOLUTION
   WP-UI-MA-OVERLAY               — 20/50/200-day MA overlay
 
-Daily fetcher v1 is live (7bacd7f) and refactored onto shared helpers
-(4be60e1 + fd8ba2e recovery). Historical backfill is live (def6718) —
-12,650 rows across 10 blue chips, 2021-05-17 → 2026-05-15, 1265 rows
-each, uniform. Foundation arc effectively complete. Next gate is
-either the signal-hypothesis arc (WP-SIGNAL-HYPOTHESIS-V1) or the UI
-shell (gated on WP-UI-FRONTEND-STACK-ARM64-RESOLUTION). Universe
-expansion to ASX 200 banked separately (see _ideas.md →
-WP-DATA-UNIVERSE-ASX200).
+Foundation arc effectively complete (daily fetcher 7bacd7f, src-layout
+4be60e1+fd8ba2e, historical backfill def6718, V1 backtest 00e2141).
+Production state at session-4 close: 10 stocks, 12,650 prices, 0 signals;
+engine + paginated-fetch path proven. Next gate is the signal arc:
+WP-SIGNAL-MA-CROSSOVER-GRID-V1 in session 5, then additional signal
+families (momentum, mean reversion, etc.) once the MA family is fully
+characterised. UI shell remains gated on
+WP-UI-FRONTEND-STACK-ARM64-RESOLUTION.
 
 Signal design (Phase 2, months 2-4):
   WP-SIGNAL-HYPOTHESIS-V1       — one clear hypothesis (leaning earnings surprise + RSI<40 + above 200MA)
@@ -116,10 +150,9 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-T1 — idle (closed WP-INFRA-SRC-LAYOUT,
-            WP-INFRA-GITIGNORE-RESCOPE)
-T2 — idle (closed WP-DATA-HISTORICAL-BACKFILL)
-T3 — idle (closed WP-RECONCILE-SESSION-3-CLOSE)
+T1 — idle (closed WP-SIGNAL-MA-CROSSOVER-V1 + this reconcile)
+T2 — idle / spare (not activated this session)
+T3 — idle / spare (not activated this session)
 T4 — held / spare
 T5 — held / spare
 

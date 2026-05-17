@@ -44,6 +44,18 @@ Shell: PowerShell 5.1 on Windows 11 ARM64 (Snapdragon).
    check resolved versions vs current-stable before
    pinning.
 7. **DB driver**: supabase-py only. No native PG drivers.
+8. **ASCII-only stdout in PowerShell scripts.**
+   PowerShell's default cp1252 codec crashes on Unicode
+   characters in stdout (`->`, em-dashes, Greek letters,
+   box-drawing). Python scripts that print to PowerShell
+   stdout must use ASCII equivalents (`->` not `→`, `--`
+   not `—`, `alpha` not `α`). Commit message bodies via
+   `git commit -F <tempfile>` are UTF-8 file writes per
+   item 2, so Unicode in commit messages is FINE — the
+   constraint is stdout only. Validated session 4: probe-
+   exit `UnicodeEncodeError` crash on `→` in
+   WP-SIGNAL-MA-CROSSOVER-V1 Phase A; full Phase B output
+   ran clean under ASCII-only discipline.
 
 ## Rule 0 — investigate before executing
 

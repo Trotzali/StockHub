@@ -117,6 +117,21 @@ WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
   ENRICHMENT is the likely trigger) makes the duplication
   actively painful.
 
+WP-INFRA-YFUTILS-FETCH-PRICES-PAGINATED
+  Extract the paginated read helper from
+  scripts/backtest_ma_crossover.py into src/data/yfinance_utils.py.
+  PostgREST free-tier db-max-rows = 1000 caps .select() reads from
+  `prices` regardless of .range() or .limit() overrides. Paginated
+  fetch is mandatory for >1000-row reads (per-ticker history is
+  ~1265 rows after 5y backfill). Proposed signature:
+    fetch_prices_full(client, ticker, page_size=1000) -> list[dict]
+  Current paginated-read consumers: 1 (scripts/backtest_ma_crossover.py
+  at 00e2141). Note: scripts/backfill_historical.py writes only, does
+  NOT trigger this. Extraction fires at 2nd consumer, which will be
+  either WP-SIGNAL-MA-CROSSOVER-GRID-V1 or WP-UI-STREAMLIT-SHELL,
+  whichever ships first. Surfaced in WP-SIGNAL-MA-CROSSOVER-V1
+  Phase A; banked at session-4 close.
+
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
 ═══════════════════════════════════════════════════════
@@ -160,3 +175,30 @@ Process learnings (SESSION 3):
   only `git check-ignore -v <new-paths>` does, before
   push. Banked into CLAUDE.md commit-discipline chain at
   session-3 close.
+
+Process learnings (SESSION 4):
+- V1 backtest result as data point: 50/200 SMA long-only on 10 ASX
+  blue chips, 2022-02-25 → 2026-05-15, avg alpha over B&H is -30
+  percentage points. Engine proven correct (CBA.AX V-walked end-to-
+  end, B&H math reconciled to the cent). Signal family has real
+  defensive properties (CSL.AX +47.6% alpha during a 60% B&H
+  drawdown — the strategy sat in cash). Misapplied as a standalone
+  long-only signal on a bull-trending universe. Useful as a regime
+  filter or defensive sleeve, NOT a primary alpha generator.
+  Relevant input for any future signal that incorporates MA
+  crossovers in any form.
+- Regime filter idea (banked for V3+): only take MA crossover
+  entries when broader index (XJO) is above its own MA-200. Bank
+  conditional on WP-SIGNAL-MA-CROSSOVER-GRID-V1 also refuting the
+  family across sensible parameter combos. Signal modification, not
+  parameter sweep.
+- Per-ticker parameter tuning is curve-fitting on this universe.
+  Tuning (short, long) per ticker on 10 tickers × 4y multiplies the
+  parameter search space by 10x with no statistical justification.
+  Do NOT include in WP-SIGNAL-MA-CROSSOVER-GRID-V1. Aggregate
+  optimisation only. Bank as red-flag anti-pattern for any future
+  per-ticker tuning impulse.
+- ASCII-only stdout in PowerShell promoted from session-3
+  calibration to CLAUDE.md environment notes (item 8 — see
+  CLAUDE.md). Validated session 4: clean Phase B stdout run with
+  ASCII-only discipline after a Phase A probe-exit crash on `→`.

@@ -168,3 +168,41 @@ def6718 — 2026-05-17 — WP-DATA-HISTORICAL-BACKFILL
   (generalize the 3-attempt backoff duplicated as
   fetch_history_with_retry into a shared helper).
   Gates: fd8ba2e.
+
+00e2141 — 2026-05-18 — WP-SIGNAL-MA-CROSSOVER-V1
+  Engine-first single-signal backtest. 50/200 SMA crossover on
+  adj_close, long-only, hold-until-opposite-signal, signal-day-
+  close execution, 0.1% brokerage + $0.01 slippage per side. Per-
+  ticker $10k starting capital across 10 ASX blue chips. Inline
+  thin generic run_backtest(signal_fn, ticker, df, ...) engine in
+  scripts/backtest_ma_crossover.py; ma_crossover_signal,
+  compute_metrics defined alongside. Inline paginated
+  fetch_full_series helper (PostgREST free-tier 1000-row cap
+  workaround — Phase A finding).
+
+  Outputs: summary metrics per ticker + aggregate to stdout
+  (ASCII-only per session-3 calibration); per-ticker equity curve
+  to results/equity_curve_<TICKER_AX>.csv (filename substitution
+  `.` -> `_`). results/ added to .gitignore as /results/
+  (anchored per session-3 lesson).
+
+  V-walked: CBA.AX first golden cross 2022-04-06 verified by hand
+  (MA-50 below MA-200 day-before, above on signal day). B&H math
+  reconciled to the cent. Equity curve start matches MA-200 warm-
+  up cutoff 2022-02-25 across all 10 tickers (uniform per Phase A).
+
+  Headline result: signal underperforms B&H by avg -30 percentage
+  points across the universe over 2022-02-25 -> 2026-05-15. 2/10
+  tickers beat B&H — CSL.AX +47.6% alpha (defensive: signal sat in
+  cash through 60% drawdown), WES.AX +17.3% alpha (1 trade, 100%
+  win rate, noise more than signal). Signal family confirmed to
+  have real defensive properties; misapplied as standalone long-
+  only on a bull-trending universe. Banked as data point for V2
+  grid sweep and any future signal exploration that uses MA
+  crossovers in any form.
+
+  Banked follow-ups: WP-INFRA-YFUTILS-FETCH-PRICES-PAGINATED (in
+  _ideas.md, current consumer count = 1; backfill_historical writes
+  only, doesn't count). WP-SIGNAL-MA-CROSSOVER-GRID-V1 promoted to
+  Foundation. ASCII-only-stdout convention promoted to CLAUDE.md.
+  Gates: 56ddc53.
