@@ -19,6 +19,7 @@ secrets.toml
 
 # Local data / scratch
 /data/
+/results/
 *.db
 *.sqlite
 *.sqlite3
