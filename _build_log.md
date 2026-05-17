@@ -65,3 +65,39 @@ a1d825d — 2026-05-16 — WP-DB-SCHEMA-INIT
   Banked WPs: WP-UI-FRONTEND-STACK-ARM64-RESOLUTION,
               WP-DB-DIRECT-SQL-ESCAPE-HATCH.
   Gates: 16ebfcb.
+
+70e7193 — 2026-05-16 — WP-HYGIENE-TIMELINE-SHA-BACKFILL
+  Patched two [actual-close-sha] placeholders in
+  _timeline.md to 401c938; rewrote the line 196-198
+  meta-note paragraph to past tense. Phase A discovered a
+  third occurrence of the literal string (the meta-note
+  itself, not a placeholder) — naive replacement would
+  have corrupted the file. Same pattern as the 16ebfcb
+  patch from session 1.
+  Gates: 401c938.
+
+9600a81 — 2026-05-16 — WP-INFRA-CLAUDE-MD
+  Authored CLAUDE.md at repo root so Claude Code auto-
+  loads the standing working-model rules on terminal
+  start. Per-prompt scaffolding now drops env notes,
+  commit discipline, identity-stamp convention, state-file
+  naming, and report format. Gate anomaly resolved cleanly
+  via `git pull --ff-only` in Phase B — T1's hygiene
+  commit landed between T2's Phase A read and Phase B
+  execution.
+  Gates: 70e7193.
+
+7bacd7f — 2026-05-16 — WP-DATA-YFINANCE-FETCHER
+  scripts/fetch_yfinance.py at 192 lines. Daily ASX EOD
+  ingestion of 10 hardcoded blue chips (CBA, BHP, RIO,
+  WBC, NAB, ANZ, WES, WOW, TLS, CSL) into Supabase via
+  yfinance. Single yf.download batch with
+  auto_adjust=False, flattened via stack(level=0,
+  future_stack=True), idempotent upsert on (ticker,
+  trade_date). 7-day fetch window per run (gap-resilient).
+  3-attempt exponential backoff (1s/2s/4s). NaN-guard
+  hardened across all 6 NOT NULL price columns. Stocks
+  rows minimal (ticker, name, is_active=true). Dry-run
+  validated against production: 10 stocks + 70 prices
+  across all 10 expected tickers, zero dropped.
+  Gates: 9600a81.

@@ -37,7 +37,7 @@ LOCKED DECISIONS
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-WP-DATA-YFINANCE-FETCHER — queued for next session (fresh chat)
+(between WPs, awaiting SESSION 3 selection)
 
 Closed in SESSION 1:
   WP-BOOTSTRAP-REPO-INIT              — 73b2c8d
@@ -48,7 +48,13 @@ Closed in SESSION 1:
                                                   mid-session milestone)
   WP-DEV-ENV-SETUP                    — 1ed6d8b  (after four-round
                                                   ARM64 wheel-gap odyssey)
-  WP-RECONCILE-SESSION-1-CLOSE        — this commit (actual close)
+  WP-RECONCILE-SESSION-1-CLOSE        — 401c938  (actual close)
+
+Closed in SESSION 2:
+  WP-HYGIENE-TIMELINE-SHA-BACKFILL    — 70e7193
+  WP-INFRA-CLAUDE-MD                  — 9600a81
+  WP-DATA-YFINANCE-FETCHER            — 7bacd7f
+  WP-RECONCILE-SESSION-2-CLOSE        — (see `git log -1 --oneline`)
 
 See _build_log.md for commit details.
 
@@ -56,14 +62,19 @@ See _build_log.md for commit details.
 OPEN WPs (BANKED, NOT STARTED)
 ═══════════════════════════════════════════════════════
 Foundation (Phase 1, months 1-2):
-  WP-DATA-YFINANCE-FETCHER       — Python script: ASX 200 daily OHLC -> Supabase
-  WP-DATA-HISTORICAL-BACKFILL    — 5yr historical load
+  WP-DATA-HISTORICAL-BACKFILL    — 5yr historical load — ~12,500 rows
+                                   via Ticker.history(period="5y") (yf.download
+                                   batch caps at ~60d reliably per T3 recon).
+                                   Idempotent upsert via the existing fetcher
+                                   pattern.
   WP-UI-STREAMLIT-SHELL          — Streamlit app, ticker dropdown, Plotly candlestick
                                    GATED ON: WP-UI-FRONTEND-STACK-ARM64-RESOLUTION
   WP-UI-MA-OVERLAY               — 20/50/200-day MA overlay
 
-Backend stack is live (1ed6d8b). Next gate: WP-DATA-YFINANCE-FETCHER —
-populate stocks + prices tables with ASX 200 daily OHLC.
+Fetcher v1 is live (7bacd7f) — 10 hardcoded blue chips ingesting cleanly.
+Next gate: WP-DATA-HISTORICAL-BACKFILL — 5-year per-ticker load.
+Universe expansion to ASX 200 banked separately (see _ideas.md →
+WP-DATA-UNIVERSE-ASX200).
 
 Signal design (Phase 2, months 2-4):
   WP-SIGNAL-HYPOTHESIS-V1       — one clear hypothesis (leaning earnings surprise + RSI<40 + above 200MA)
@@ -83,10 +94,11 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-T1 — idle (just shipped 73b2c8d + reconcile)
-T2 — idle
-T3 — idle
-T4 — idle
+T1 — idle (closed WP-HYGIENE-TIMELINE-SHA-BACKFILL,
+            WP-DATA-YFINANCE-FETCHER, + this reconcile)
+T2 — idle (closed WP-INFRA-CLAUDE-MD + read-only V-walk)
+T3 — idle (closed WP-DATA-YFINANCE-FETCHER Phase A recon)
+T4 — held / spare
 T5 — held / spare
 
 ═══════════════════════════════════════════════════════
@@ -170,3 +182,33 @@ Permanent gotchas — bake into every CC prompt on this box.
      - Build pyarrow from source (last resort)
    DO NOT pin streamlit==0.8 as a "workaround" — that's
    semantic poison.
+
+10. Pandas 3.x .stack() semantics (surfaced WP-DATA-YFINANCE-FETCHER)
+    The venv runs pandas==3.0.3. The new .stack() semantics require
+    future_stack=True explicitly. Legacy stack(level=0) without that
+    kwarg was a breaking change in pandas 3. Use:
+      df.stack(level=0, future_stack=True)
+    in any code that flattens a (Ticker, Field) MultiIndex DataFrame.
+
+11. yfinance timezone divergence (surfaced WP-DATA-YFINANCE-FETCHER)
+    yfinance Ticker.history returns tz-aware Australia/Sydney;
+    yf.download returns tz-naive (already exchange-local). Never
+    call .tz_convert('UTC').date() on ASX bars — evening UTC times
+    land on the previous trade day. Use the trade_date() helper
+    pattern from scripts/fetch_yfinance.py: if tzinfo, convert to
+    Australia/Sydney first, then .date().
+
+12. yfinance auto_adjust default (surfaced WP-DATA-YFINANCE-FETCHER)
+    yfinance auto_adjust defaults to True (folds corporate-action
+    adjustments into Close and DROPS Adj Close from the output).
+    Always pass auto_adjust=False to preserve both raw Close and
+    Adj Close — the schema has both columns NOT NULL.
+
+13. Parallel-terminal sequencing (surfaced twice in SESSION 2)
+    When a queued WP's Phase A captures a HEAD that advances by
+    Phase B time (because another terminal shipped a commit in
+    between), `git pull --ff-only origin master` in Phase B
+    integrates safely as a fast-forward. Demonstrated twice in
+    SESSION 2: T2's WP-INFRA-CLAUDE-MD over T1's hygiene push,
+    and T2's V-walk over T1's fetcher push. Fast-forward only —
+    if the pull would require a merge, STOP and report instead.

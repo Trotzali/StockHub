@@ -229,3 +229,93 @@ PROCESS NOTES (additions to prior):
   - Banking discipline held: WP-UI-FRONTEND-STACK-ARM64-RESOLUTION and
     WP-DB-DIRECT-SQL-ESCAPE-HATCH captured cleanly without
     scope-creeping the current WP.
+
+═══════════════════════════════════════════════════════
+SESSION 2 — 2026-05-16 (AEST)
+═══════════════════════════════════════════════════════
+
+OPEN
+  Opened with handover from chat 1. T1, T2, T3 activated;
+  T4/T5 idle throughout.
+
+WP-HYGIENE-TIMELINE-SHA-BACKFILL (T1, 70e7193)
+  Phase A caught third [actual-close-sha] on line 196
+  (meta-note, not placeholder). Route 1: patch lines
+  192+194 to 401c938, rewrite line 196-198 to past tense.
+  Saved a file corruption.
+
+WP-DATA-YFINANCE-FETCHER Phase A recon (T3, no commit)
+  9-objective read-only investigation. Surfaced
+  auto_adjust=True dropping Adj Close, pandas 3.x
+  future_stack requirement, Ticker.history vs yf.download
+  tz divergence, no rate-throttling at 20 sequential.
+  Findings drove the WP-DATA-YFINANCE-FETCHER design.
+
+WP-INFRA-CLAUDE-MD (T2, 9600a81)
+  Phase A gate caught HEAD=401c938; T1's hygiene push
+  landed mid-flight, Phase B `git pull --ff-only`
+  integrated as fast-forward. First demonstration of the
+  parallel-terminal sequencing pattern.
+
+WP-DATA-YFINANCE-FETCHER (T1, 7bacd7f)
+  Phase A flagged pins already tighter than proposed;
+  NaN-guard gap on close-only drop. Decisions: skip pin
+  widening, harden NaN guard across all 6 NOT NULL price
+  columns. Dry-run validated: 10 stocks + 70 prices,
+  zero dropped.
+
+WP-VERIFY-DEPLOYED-SCHEMA V-walk (T2, no commit)
+  Pre-write V-walk, ran parallel to T1 fetcher Phase B.
+  25/25 columns present by name, 25/25 types match per
+  PostgREST OpenAPI. HEAD-moved-during-walk anomaly
+  (9600a81 → 7bacd7f) — second demonstration of the
+  parallel-terminal sequencing pattern. VERDICT:
+  NO_DRIFT_DETECTED.
+
+PROCESS LEARNINGS
+  - Rule 0 Phase A caught two real failures this session:
+    third [actual-close-sha] occurrence (file corruption
+    avoided) and NaN-guard gap (failed upsert avoided).
+  - Parallel-terminal sequencing demonstrated twice;
+    `git pull --ff-only` is the safeguard.
+  - CLAUDE.md authored mid-session paid for itself within
+    the same session.
+  - pandas 3.x in venv was a discovery, not a plan.
+
+═══════════════════════════════════════════════════════
+SESSION 2 CLOSE — 2026-05-16 AEST
+═══════════════════════════════════════════════════════
+
+SHIPPED (3 WPs with commits + this reconcile):
+  70e7193 — WP-HYGIENE-TIMELINE-SHA-BACKFILL
+  9600a81 — WP-INFRA-CLAUDE-MD
+  7bacd7f — WP-DATA-YFINANCE-FETCHER
+
+READ-ONLY WPs (no commit):
+  T3 — WP-DATA-YFINANCE-FETCHER Phase A recon
+  T2 — WP-VERIFY-DEPLOYED-SCHEMA V-walk
+
+PRODUCTION STATE AT CLOSE:
+  Supabase: 10 stocks, 70 prices, 0 signals
+  Deployed schema: verified clean via PostgREST OpenAPI
+  introspection (NO_DRIFT_DETECTED, 25/25 columns)
+
+HEAD at SESSION 2 close: this commit (see
+`git log -1 --oneline`). Improvement over session-1
+placeholder pattern — reconcile commits don't need to
+self-reference; git log is authoritative. No next-session-
+open hygiene patch needed.
+
+TERMINAL STATES AT CLOSE:
+  T1 — idle (closed hygiene WP + fetcher WP + this reconcile)
+  T2 — idle (closed CLAUDE.md WP + read-only V-walk)
+  T3 — idle (closed fetcher Phase A recon)
+  T4-T5 — held / spare; never activated this session
+
+IMMEDIATE QUEUE (SESSION 3):
+  Between WPs. Next Foundation gate is
+  WP-DATA-HISTORICAL-BACKFILL (5-year per-ticker load).
+  Banked alternatives for session-3 selection in
+  _ideas.md: WP-DATA-UNIVERSE-ASX200,
+  WP-DATA-STOCKS-METADATA-ENRICHMENT, WP-INFRA-SCHEDULER,
+  WP-INFRA-SCHEMA-DRIFT-SCRIPT.

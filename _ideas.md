@@ -68,6 +68,40 @@ WP-DB-DIRECT-SQL-ESCAPE-HATCH
   Banked because we may eventually want server-side aggregation or
   window functions for heavy backtests.
 
+WP-DATA-UNIVERSE-ASX200
+  Expand the hardcoded 10-ticker blue-chip list in
+  scripts/fetch_yfinance.py to the full ASX 200. Source TBD —
+  candidates: scrape ASX index composition page, use a maintained
+  list from a finance package (yfinance lacks index-membership
+  API), or pull from Alpha Vantage / Finnhub free tier. Decide
+  refresh cadence (quarterly index reconstitution).
+
+WP-DATA-STOCKS-METADATA-ENRICHMENT
+  Populate the currently-NULL stocks columns (sector, industry,
+  market_cap) via yfinance Ticker.info per ticker. Weekly refresh
+  job — info changes slowly. Separate from the daily price fetch
+  (different rate-limit profile, different failure tolerance).
+  Banked because v1 fetcher ships minimal stocks rows; enrichment
+  is a layer on top.
+
+WP-INFRA-SCHEDULER
+  Automated daily run of scripts/fetch_yfinance.py post-ASX close.
+  Recommend Windows Task Scheduler for v1 (no extra deps, native
+  to the box). Trigger ~17:30 AEST (after 16:00 ASX close, before
+  late corrections). Capture stdout/stderr to a rotated log file
+  in scripts/logs/. Consider an exit-code-aware retry wrapper if
+  silent failures bite.
+
+WP-INFRA-SCHEMA-DRIFT-SCRIPT
+  Formalize the V-walk done in session 2 (T2 read-only,
+  NO_DRIFT_DETECTED on 25/25 columns) into a committed script —
+  scripts/verify_schema.py — for repeatable audits. Pulls the
+  expected schema from migrations/001_initial_schema.sql,
+  introspects deployed schema via PostgREST OpenAPI (/rest/v1/
+  with Accept: application/openapi+json), diffs by column name +
+  PostgREST type. Exit 0 = NO_DRIFT_DETECTED, exit non-zero +
+  diff report on drift.
+
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
 ═══════════════════════════════════════════════════════
@@ -78,3 +112,15 @@ Lessons carried from WedgeBet:
 - Build infra to enable fast signal iteration, not the other way around.
 - Don't fall in love with the system; fall in love with the validation
   process.
+
+Process learnings (SESSION 2):
+- Reconcile-commit self-reference improvement: use
+  `git log -1 --oneline` wording in _timeline.md instead of
+  [close-sha] placeholders. Eliminates the next-session-open
+  hygiene patch entirely.
+- TERMINAL MAP relocation — _project_state.md currently houses
+  a TERMINAL MAP block which is inherently session-state
+  (terminal status is mid-session, not project-state). Consider
+  relocating to _timeline.md session entries where it lives
+  naturally. Defer the refactor until it actively causes
+  confusion.
