@@ -14,13 +14,16 @@ Usage: python scripts/fetch_yfinance.py
 import os
 import sys
 import time
-from datetime import date
+from pathlib import Path
 from typing import Optional
 
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
 from supabase import create_client, Client
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.data.yfinance_utils import trade_date, df_to_records, upsert_prices
 
 # 10 ASX blue chips for MVP. Expand via WP-DATA-UNIVERSE-ASX200.
 TICKERS: dict[str, str] = {
@@ -36,26 +39,12 @@ TICKERS: dict[str, str] = {
     "CSL.AX": "CSL Limited",
 }
 
-UPSERT_BATCH_SIZE = 500
 FETCH_PERIOD = "7d"
 RETRY_DELAYS = (1, 2, 4)  # exponential backoff between attempts
 
 NOT_NULL_PRICE_COLS = [
     "open", "high", "low", "close", "adj_close", "volume",
 ]
-
-
-def trade_date(ts: pd.Timestamp) -> date:
-    """Convert a yfinance timestamp to an ASX trade date.
-
-    yf.Ticker.history returns tz-aware Australia/Sydney;
-    yf.download returns tz-naive (already exchange-local).
-    Never call .tz_convert('UTC').date() — for AEDT/AEST
-    evening UTC bars that lands you on the previous day.
-    """
-    if ts.tzinfo is not None:
-        ts = ts.tz_convert("Australia/Sydney")
-    return ts.date()
 
 
 def fetch_with_retry(tickers: list[str]) -> pd.DataFrame:
@@ -101,27 +90,6 @@ def flatten_prices(df: pd.DataFrame) -> pd.DataFrame:
     return flat
 
 
-def df_to_records(df: pd.DataFrame) -> list[dict]:
-    """Convert DataFrame to upsert-ready records (NaN -> None, ISO dates)."""
-    records = []
-    for raw in df.to_dict(orient="records"):
-        r = {}
-        for k, v in raw.items():
-            if pd.isna(v):
-                r[k] = None
-            elif k == "trade_date":
-                r[k] = trade_date(pd.Timestamp(v)).isoformat()
-            else:
-                r[k] = v
-        records.append(r)
-    return records
-
-
-def chunked(seq: list, size: int):
-    for i in range(0, len(seq), size):
-        yield seq[i:i + size]
-
-
 def upsert_stocks(client: Client) -> int:
     """Upsert minimal stocks rows.
 
@@ -136,16 +104,6 @@ def upsert_stocks(client: Client) -> int:
         rows, on_conflict="ticker"
     ).execute()
     return len(rows)
-
-
-def upsert_prices(client: Client, records: list[dict]) -> int:
-    total = 0
-    for chunk in chunked(records, UPSERT_BATCH_SIZE):
-        client.table("prices").upsert(
-            chunk, on_conflict="ticker,trade_date"
-        ).execute()
-        total += len(chunk)
-    return total
 
 
 def main() -> int:
