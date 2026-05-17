@@ -65,15 +65,17 @@ call, chained with `&&`):
 1. `cd "C:/Users/admin/Projects/StockHub"`
 2. `git status -s` — pre-stage assertion (only expected
    paths should appear)
-3. `git add <explicit pathspec>` — never `git add .`
-4. `git diff --cached --name-only` — confirm only the
+3. `git check-ignore -v <new-paths>` — silent-ignore
+   trip wire. Empty stdout / exit 1 = PASS.
+4. `git add <explicit pathspec>` — never `git add .`
+5. `git diff --cached --name-only` — confirm only the
    intended files are staged
-5. Write commit message to a tempfile (heredoc)
-6. `git commit -F <tempfile>`
-7. `rm <tempfile>`
-8. `git push origin master`
-9. `git log -1 --oneline` + `git status -s` for the
-   report
+6. Write commit message to a tempfile (heredoc)
+7. `git commit -F <tempfile>`
+8. `rm <tempfile>`
+9. `git push origin master`
+10. `git log -1 --oneline` + `git status -s` for the
+    report
 
 Rules:
 - One work product per commit.
@@ -84,6 +86,13 @@ Rules:
   (e.g. `_timeline.md` when the WP isn't a reconcile).
 - Deviations from locked specs are documented in the
   commit message AND banked in `_ideas.md`.
+- Why step 3 exists: `git status -s` shows `?? src/`
+  for an untracked directory — shorthand that hides
+  which files inside got .gitignore'd. 4be60e1 shipped
+  with `src/data/yfinance_utils.py` silently excluded
+  by a `data/` pattern; recovered in fd8ba2e by
+  anchoring to `/data/`. The check-ignore step catches
+  the gap before push, not after.
 
 ## State files (source of truth)
 

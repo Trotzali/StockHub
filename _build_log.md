@@ -101,3 +101,70 @@ a1d825d — 2026-05-16 — WP-DB-SCHEMA-INIT
   validated against production: 10 stocks + 70 prices
   across all 10 expected tickers, zero dropped.
   Gates: 9600a81.
+
+4be60e1 — 2026-05-17 — WP-INFRA-SRC-LAYOUT
+  Pure refactor. Extracted trade_date(), df_to_records(),
+  chunked() (now private), upsert_prices(), and
+  UPSERT_BATCH_SIZE from scripts/fetch_yfinance.py into a
+  new shared module src/data/yfinance_utils.py. Daily
+  fetcher imports via a 4-line sys.path prelude.
+  Import mechanism (Phase A4 decision): sys.path
+  manipulation in each consumer, not pyproject.toml
+  editable install. Lighter — no packaging surface area
+  for an MVP single-repo screener.
+  Behaviour unchanged: V-walked 10 stocks + 70 prices,
+  zero dropped, idempotent same-day rerun matches the
+  7bacd7f baseline.
+  Shipped broken: `data/` pattern in .gitignore (line 21)
+  silently excluded src/data/yfinance_utils.py and
+  src/data/__init__.py from staging. origin/master ended
+  up with a fetcher importing a non-tracked module.
+  Recovered in fd8ba2e.
+  Gates: 5799004.
+
+fd8ba2e — 2026-05-17 — WP-INFRA-GITIGNORE-RESCOPE
+  Recovery of 4be60e1. .gitignore line 21 `data/`
+  matched any directory named data/ anywhere in the tree,
+  including src/data/. Anchored to `/data/` (repo root
+  only); top-level data/ remains ignored, reserved for
+  future raw-data dumps. Ships the two src/data/ files
+  that were missed in 4be60e1.
+  V-walked post-fix: 10 stocks + 70 prices, zero dropped,
+  idempotent same-day rerun matches baseline.
+  Methodology lesson banked: `git status -s` shorthand
+  `?? src/` hides which files inside got .gitignore'd;
+  `git check-ignore -v <new-paths>` is the pre-stage trip
+  wire. Follow-ups banked for session-close reconcile:
+  CLAUDE.md amendment + _ideas.md calibration entry on
+  anchored gitignore patterns.
+  Gates: 4be60e1.
+
+def6718 — 2026-05-17 — WP-DATA-HISTORICAL-BACKFILL
+  One-shot scripts/backfill_historical.py. Sequential
+  per-ticker yf.Ticker(t).history(period="5y",
+  auto_adjust=False) over the 10 ASX blue chips from
+  the daily fetcher's hardcoded universe. yf.download
+  batch caps at ~60d (T3 session-2 recon), so per-ticker
+  is the only viable path for a 5y window. Consumes
+  existing helpers from src/data/yfinance_utils.py
+  (df_to_records, upsert_prices, transitively trade_date,
+  chunked, UPSERT_BATCH_SIZE); module unchanged this WP.
+  Per-ticker upsert cadence; idempotent via existing
+  on_conflict=(ticker, trade_date). IPO/delisting
+  tolerance: WARN if a ticker returns <1000 rows, do not
+  fail the run. 3-attempt exponential backoff matching
+  the daily fetcher.
+  V-walked: dry-run 12,650 total rows (10 × 1265), no
+  WARNs, zero NaN drops; full run pre-count 70 (T1 daily
+  overlap) → post-count 12,650 = 12,580 new rows, zero
+  dropped; idempotency rerun net new rows 0; post-run
+  SELECT confirms 12,650 prices across 10 tickers, per-
+  ticker earliest 2021-05-17 uniform, latest 2026-05-15,
+  count 1265 each.
+  Pre-stage trip wire (post-fd8ba2e methodology):
+  `git check-ignore -v scripts/backfill_historical.py`
+  returned empty (exit 1, not ignored).
+  Banked follow-up: WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
+  (generalize the 3-attempt backoff duplicated as
+  fetch_history_with_retry into a shared helper).
+  Gates: fd8ba2e.

@@ -102,6 +102,21 @@ WP-INFRA-SCHEMA-DRIFT-SCRIPT
   PostgREST type. Exit 0 = NO_DRIFT_DETECTED, exit non-zero +
   diff report on drift.
 
+WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
+  Generalize the 3-attempt exponential backoff (1s/2s/4s
+  delays) currently duplicated as fetch_with_retry() in
+  scripts/fetch_yfinance.py and fetch_history_with_retry()
+  in scripts/backfill_historical.py into a shared helper
+  in src/data/yfinance_utils.py. Proposed signature:
+    fetch_with_retry(call: Callable[[], pd.DataFrame],
+                     delays: Sequence[float] = (1, 2, 4),
+                     on_attempt: Callable[[int, Exception], None] | None = None,
+                     ) -> pd.DataFrame
+  Surfaced as a TODO in def6718. Low-priority refactor —
+  bank until a third consumer (WP-DATA-STOCKS-METADATA-
+  ENRICHMENT is the likely trigger) makes the duplication
+  actively painful.
+
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
 ═══════════════════════════════════════════════════════
@@ -124,3 +139,24 @@ Process learnings (SESSION 2):
   relocating to _timeline.md session entries where it lives
   naturally. Defer the refactor until it actively causes
   confusion.
+
+Process learnings (SESSION 3):
+- Gitignore pattern hygiene — anchored vs unanchored.
+  `pattern/` in .gitignore matches any directory of that
+  name anywhere in the tree; `/pattern/` matches only at
+  repo root. 4be60e1 → fd8ba2e arc: `data/` (unanchored)
+  silently excluded src/data/yfinance_utils.py and
+  src/data/__init__.py from staging; recovered by
+  anchoring to `/data/`. For project-specific top-level
+  directories (data/, logs/, build/), always anchor with
+  the leading slash. Future .gitignore edits: review
+  unanchored patterns whose names could conflict with a
+  nested directory.
+- First "shipped broken, recovered same session" arc.
+  4be60e1 V-walked locally as PASS because the working
+  tree had the files on disk — the broken state only
+  manifests on a fresh clone of origin/master. V-walks
+  against the working tree don't catch staging-set gaps;
+  only `git check-ignore -v <new-paths>` does, before
+  push. Banked into CLAUDE.md commit-discipline chain at
+  session-3 close.

@@ -37,7 +37,7 @@ LOCKED DECISIONS
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-(between WPs, awaiting SESSION 3 selection)
+(between WPs, awaiting SESSION 4 selection)
 
 Closed in SESSION 1:
   WP-BOOTSTRAP-REPO-INIT              — 73b2c8d
@@ -54,7 +54,19 @@ Closed in SESSION 2:
   WP-HYGIENE-TIMELINE-SHA-BACKFILL    — 70e7193
   WP-INFRA-CLAUDE-MD                  — 9600a81
   WP-DATA-YFINANCE-FETCHER            — 7bacd7f
-  WP-RECONCILE-SESSION-2-CLOSE        — (see `git log -1 --oneline`)
+  WP-RECONCILE-SESSION-2-CLOSE        — 5799004
+
+Closed in SESSION 3:
+  WP-INFRA-SRC-LAYOUT                 — 4be60e1  (T1, shipped broken —
+                                                  `data/` pattern in
+                                                  .gitignore hid src/data/*
+                                                  from staging)
+  WP-INFRA-GITIGNORE-RESCOPE          — fd8ba2e  (T1, recovery: anchored
+                                                  data/ → /data/, ships
+                                                  missed files)
+  WP-DATA-HISTORICAL-BACKFILL         — def6718  (T2, 5y EOD × 10 blues —
+                                                  12,650 rows in prices)
+  WP-RECONCILE-SESSION-3-CLOSE        — (see `git log -1 --oneline`)
 
 See _build_log.md for commit details.
 
@@ -62,18 +74,28 @@ See _build_log.md for commit details.
 OPEN WPs (BANKED, NOT STARTED)
 ═══════════════════════════════════════════════════════
 Foundation (Phase 1, months 1-2):
-  WP-DATA-HISTORICAL-BACKFILL    — 5yr historical load — ~12,500 rows
-                                   via Ticker.history(period="5y") (yf.download
-                                   batch caps at ~60d reliably per T3 recon).
-                                   Idempotent upsert via the existing fetcher
-                                   pattern.
+  WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
+                                 — Generalize the 3-attempt exponential
+                                   backoff currently duplicated as
+                                   fetch_with_retry() in
+                                   scripts/fetch_yfinance.py and
+                                   fetch_history_with_retry() in
+                                   scripts/backfill_historical.py into a
+                                   shared helper in src/data/yfinance_utils.py.
+                                   Surfaced as a TODO in def6718.
+                                   Low priority — bank until a third consumer
+                                   makes the duplication actively painful.
   WP-UI-STREAMLIT-SHELL          — Streamlit app, ticker dropdown, Plotly candlestick
                                    GATED ON: WP-UI-FRONTEND-STACK-ARM64-RESOLUTION
   WP-UI-MA-OVERLAY               — 20/50/200-day MA overlay
 
-Fetcher v1 is live (7bacd7f) — 10 hardcoded blue chips ingesting cleanly.
-Next gate: WP-DATA-HISTORICAL-BACKFILL — 5-year per-ticker load.
-Universe expansion to ASX 200 banked separately (see _ideas.md →
+Daily fetcher v1 is live (7bacd7f) and refactored onto shared helpers
+(4be60e1 + fd8ba2e recovery). Historical backfill is live (def6718) —
+12,650 rows across 10 blue chips, 2021-05-17 → 2026-05-15, 1265 rows
+each, uniform. Foundation arc effectively complete. Next gate is
+either the signal-hypothesis arc (WP-SIGNAL-HYPOTHESIS-V1) or the UI
+shell (gated on WP-UI-FRONTEND-STACK-ARM64-RESOLUTION). Universe
+expansion to ASX 200 banked separately (see _ideas.md →
 WP-DATA-UNIVERSE-ASX200).
 
 Signal design (Phase 2, months 2-4):
@@ -94,10 +116,10 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-T1 — idle (closed WP-HYGIENE-TIMELINE-SHA-BACKFILL,
-            WP-DATA-YFINANCE-FETCHER, + this reconcile)
-T2 — idle (closed WP-INFRA-CLAUDE-MD + read-only V-walk)
-T3 — idle (closed WP-DATA-YFINANCE-FETCHER Phase A recon)
+T1 — idle (closed WP-INFRA-SRC-LAYOUT,
+            WP-INFRA-GITIGNORE-RESCOPE)
+T2 — idle (closed WP-DATA-HISTORICAL-BACKFILL)
+T3 — idle (closed WP-RECONCILE-SESSION-3-CLOSE)
 T4 — held / spare
 T5 — held / spare
 

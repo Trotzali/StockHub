@@ -300,11 +300,12 @@ PRODUCTION STATE AT CLOSE:
   Deployed schema: verified clean via PostgREST OpenAPI
   introspection (NO_DRIFT_DETECTED, 25/25 columns)
 
-HEAD at SESSION 2 close: this commit (see
-`git log -1 --oneline`). Improvement over session-1
-placeholder pattern — reconcile commits don't need to
-self-reference; git log is authoritative. No next-session-
-open hygiene patch needed.
+HEAD at SESSION 2 close: 5799004 (opportunistic backfill
+at session-3 close — the `git log -1 --oneline` wording
+was the no-placeholder pattern at write time). Improvement
+over session-1 placeholder pattern — reconcile commits
+don't need to self-reference; git log is authoritative.
+No next-session-open hygiene patch needed.
 
 TERMINAL STATES AT CLOSE:
   T1 — idle (closed hygiene WP + fetcher WP + this reconcile)
@@ -319,3 +320,114 @@ IMMEDIATE QUEUE (SESSION 3):
   _ideas.md: WP-DATA-UNIVERSE-ASX200,
   WP-DATA-STOCKS-METADATA-ENRICHMENT, WP-INFRA-SCHEDULER,
   WP-INFRA-SCHEMA-DRIFT-SCRIPT.
+
+═══════════════════════════════════════════════════════
+SESSION 3 — 2026-05-17 (AEST)
+═══════════════════════════════════════════════════════
+
+OPEN
+  Opened with HEAD = 5799004 (session-2 close).
+  Foundation arc continuing — daily fetcher live; need
+  shared-helpers refactor + 5y historical backfill before
+  signal-hypothesis work begins.
+
+WP-INFRA-SRC-LAYOUT (T1, 4be60e1)
+  Pure refactor. Extracted trade_date, df_to_records,
+  chunked, upsert_prices, UPSERT_BATCH_SIZE from
+  scripts/fetch_yfinance.py into src/data/yfinance_utils.py.
+  Import mechanism Phase A decision: sys.path manipulation
+  over pyproject.toml editable install — lighter for an
+  MVP. V-walked locally post-refactor: 10 stocks + 70
+  prices, zero dropped. Shipped cleanly per the atomic
+  chain — and yet broken on origin/master. `git status -s`
+  showed `?? src/`, which hides which files inside got
+  .gitignore'd. The `data/` pattern (unanchored) silently
+  excluded src/data/yfinance_utils.py and
+  src/data/__init__.py. Discovered post-push; recovered
+  in fd8ba2e.
+
+WP-INFRA-GITIGNORE-RESCOPE (T1, fd8ba2e)
+  Recovery. Anchored `data/` → `/data/` so the pattern
+  matches only at repo root; nested data/ directories
+  (like src/data/) are now tracked. Ships the two
+  src/data/ files that were missed. V-walked post-fix:
+  10 stocks + 70 prices, zero dropped, idempotent rerun
+  matches baseline. Methodology lesson banked:
+  `git check-ignore -v <new-paths>` belongs in the pre-
+  stage assertion chain (empty stdout / exit 1 = PASS).
+  Adopted for the very next WP (def6718).
+
+WP-DATA-HISTORICAL-BACKFILL (T2, def6718)
+  One-shot scripts/backfill_historical.py. Sequential
+  per-ticker yf.Ticker(t).history(period="5y") over the
+  10 ASX blue chips. yf.download batch caps at ~60d per
+  T3 session-2 recon, so per-ticker is the only viable
+  5y path. Consumes existing helpers from
+  src/data/yfinance_utils.py — module unchanged.
+  IPO/delisting tolerance: WARN if <1000 rows, do not
+  fail. 3-attempt exponential backoff.
+  V-walked: dry-run 12,650 total (10 × 1265), no WARNs,
+  zero NaN drops; full run 12,580 new rows upserted,
+  zero dropped; idempotency rerun net 0; post-run SELECT
+  confirms 12,650 prices, 10 tickers, per-ticker
+  earliest 2021-05-17 uniform, latest 2026-05-15, count
+  1265 each. Pre-stage trip wire passed (post-fd8ba2e
+  methodology). Banked follow-up:
+  WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER.
+
+PROCESS LEARNINGS
+  - First "shipped broken, recovered same session" arc.
+    Local V-walk PASSed (working tree had the files);
+    broken state only manifested on a fresh clone of
+    origin/master. Calibration: V-walks against the
+    working tree don't catch staging-set gaps; only
+    `git check-ignore -v <new-paths>` does.
+  - Anchored gitignore patterns (/data/) over unanchored
+    (data/) for project-specific top-level directories.
+    Banked in _ideas.md calibration.
+  - Methodology adoption was same-session: fd8ba2e
+    banked the lesson, def6718 applied it inline in its
+    commit body. CLAUDE.md amendment at session close
+    promotes it to a permanent rule.
+
+═══════════════════════════════════════════════════════
+SESSION 3 CLOSE — 2026-05-17 AEST
+═══════════════════════════════════════════════════════
+
+SHIPPED (3 WPs with commits + this reconcile):
+  4be60e1 — WP-INFRA-SRC-LAYOUT (shipped broken)
+  fd8ba2e — WP-INFRA-GITIGNORE-RESCOPE (recovery)
+  def6718 — WP-DATA-HISTORICAL-BACKFILL
+
+PRODUCTION STATE AT CLOSE:
+  Supabase: 10 stocks, 12,650 prices, 0 signals
+  Per-ticker price coverage: 2021-05-17 → 2026-05-15
+    (1265 rows each — uniform across all 10 blue chips)
+  Code: scripts/fetch_yfinance.py and
+    scripts/backfill_historical.py both consume
+    src/data/yfinance_utils.py via sys.path prelude.
+
+HEAD at SESSION 3 close: this commit (see
+`git log -1 --oneline`). Same no-placeholder pattern as
+session-2 close; becomes opportunistic-backfill candidate
+at session-4 reconcile.
+
+TERMINAL STATES AT CLOSE:
+  T1 — idle (closed WP-INFRA-SRC-LAYOUT,
+              WP-INFRA-GITIGNORE-RESCOPE)
+  T2 — idle (closed WP-DATA-HISTORICAL-BACKFILL)
+  T3 — idle (closed WP-RECONCILE-SESSION-3-CLOSE)
+  T4-T5 — held / spare; never activated this session
+
+IMMEDIATE QUEUE (SESSION 4):
+  Between WPs. Foundation arc effectively complete
+  (daily fetcher + 5y historical + shared helpers
+  module). Next gate is either the signal-hypothesis arc
+  (WP-SIGNAL-HYPOTHESIS-V1 / WP-INDICATORS-TA-CORE) or
+  the UI shell (gated on
+  WP-UI-FRONTEND-STACK-ARM64-RESOLUTION). Banked
+  alternatives for session-4 selection in _ideas.md:
+  WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER,
+  WP-DATA-UNIVERSE-ASX200,
+  WP-DATA-STOCKS-METADATA-ENRICHMENT,
+  WP-INFRA-SCHEDULER, WP-INFRA-SCHEMA-DRIFT-SCRIPT.
