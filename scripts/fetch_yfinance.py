@@ -130,6 +130,15 @@ def main() -> int:
     )
     flat = flat.dropna(subset=NOT_NULL_PRICE_COLS)
 
+    # WP-INFRA-INTRADAY-FILTER: drop zero/negative-volume rows
+    # (defensive beyond the existing NaN drop; catches volume==0 on
+    # trading-halt or index-bar edge cases that slip past NaN).
+    zero_vol_mask = flat["volume"].isna() | (flat["volume"] <= 0)
+    if zero_vol_mask.any():
+        for t, n in flat.loc[zero_vol_mask, "ticker"].value_counts().items():
+            print(f"  FILTERED {t}: dropped {n} zero-or-negative-volume rows")
+        flat = flat.loc[~zero_vol_mask]
+
     records = df_to_records(flat)
     n_prices = upsert_prices(client, records)
 

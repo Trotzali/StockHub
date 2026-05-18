@@ -107,6 +107,15 @@ def process_ticker(client: Client, ticker: str, dry_run: bool) -> dict:
     tidy = tidy.dropna(subset=NOT_NULL_PRICE_COLS)
     dropped = before - len(tidy)
 
+    # WP-INFRA-INTRADAY-FILTER: drop zero/negative-volume rows
+    # (defensive beyond the existing NaN drop; catches volume==0 on
+    # trading-halt or index-bar edge cases that slip past NaN).
+    zero_vol_mask = tidy["volume"].isna() | (tidy["volume"] <= 0)
+    zero_vol_n = int(zero_vol_mask.sum())
+    if zero_vol_n:
+        print(f"  FILTERED {ticker}: dropped {zero_vol_n} zero-or-negative-volume rows")
+        tidy = tidy.loc[~zero_vol_mask]
+
     records = df_to_records(tidy)
     n = len(records)
 
