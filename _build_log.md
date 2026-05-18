@@ -206,3 +206,82 @@ def6718 — 2026-05-17 — WP-DATA-HISTORICAL-BACKFILL
   only, doesn't count). WP-SIGNAL-MA-CROSSOVER-GRID-V1 promoted to
   Foundation. ASCII-only-stdout convention promoted to CLAUDE.md.
   Gates: 56ddc53.
+
+8782a6a — 2026-05-18 — WP-SIGNAL-MA-CROSSOVER-GRID-V1
+  Engine extraction + V2 5-combo grid sweep with 60/40
+  train/test holdout at 2024-07-01. New src/backtest/
+  package: __init__.py, engine.py (run_backtest +
+  compute_metrics + compute_buy_and_hold + constants),
+  signals.py (ma_crossover_signal moved with NaN warm-up
+  contract). Engine API signature changed: signal_fn ->
+  signal_series. Caller precomputes; engine slices from
+  first non-NaN. Required for V3's full-series-precompute
+  holdout pattern.
+
+  fetch_prices_full + PAGE_SIZE=1000 appended to
+  src/data/yfinance_utils.py (closes banked
+  WP-INFRA-YFUTILS-FETCH-PRICES-PAGINATED via second-
+  consumer trigger). scripts/backtest_ma_crossover.py
+  refactored as thin caller — V1 regression byte-identical
+  (md5 c0803f6823eb696c9320dded116d6630 before and after).
+
+  scripts/backtest_ma_crossover_grid.py: 5 combos =
+  [(10,30), (20,50), (30,100), (50,100), (50,200)] x 10
+  ASX blue chips x 2 windows. Aggregate-only optimisation
+  on train Sharpe; tiebreak avg_total_return.
+
+  Headline: every combo loses to B&H on both train and
+  test alpha. V2 winner (50, 200) test alpha -5.16%, test
+  Sharpe 0.635 — same combo as V1, by design the least-bad
+  of the family. V-walk: aggregate train/test Sharpe
+  arithmetic reconciles + CBA.AX first golden cross
+  2022-04-06 hand-verified.
+  6 files changed, 637 insertions, 245 deletions.
+  Gates: 45d8220.
+
+bfaa817 — 2026-05-19 — WP-SIGNAL-MA-CROSSOVER-REGIME-FILTER-V1
+  Regime-filtered grid sweep: same 5 combos and same 60/40
+  split as V2, with MA-crossover signal AND-ed against an
+  XJO MA-200 regime filter. One-off scripts/seed_xjo.py
+  seeded 1 stocks row + 1260 prices rows for ^AXJO over
+  2021-05-18..2026-05-15 (filtered volume>0 + date<=max
+  blue-chip date; dropped 5 historical zero-volume bars).
+  ^AXJO added to TICKERS dict in scripts/fetch_yfinance.py
+  + scripts/backfill_historical.py for future runs.
+
+  src/backtest/signals.py append-only: regime_above_ma(
+  df, window=200, close_col='adj_close'). Same NaN-warm-up
+  + 0/1 contract as ma_crossover_signal.
+
+  scripts/backtest_ma_crossover_regime_grid.py: V3 grid.
+  Regime signal computed once over full XJO series;
+  combined per ticker via date-aligned element-wise
+  multiplication. DEVIATION: build_combined_signal uses
+  .ffill() on regime alignment. Engine first-pass crashed
+  on int(NaN) from XJO's 5 historical zero-volume gaps
+  inside held positions; ffill matches the live-trader
+  "carry yesterday's regime through missing data" semantic
+  and avoids spurious exit+re-entry transactions.
+
+  Headline: regime filter REFUTED. V3 winner shifted to
+  (30, 100) but every cell of V2-vs-V3 delta is negative.
+  V3 winner test alpha -19.42% (vs V2 winner -5.16%). V2's
+  best combo (50, 200) becomes V3's worst-degrading.
+
+  Key mechanism: filter CHURNS more than it BLOCKS.
+  Universe-wide on (30, 100): 80 V2 entries -> 160 V3
+  entries (31 blocked + 111 NEW). The 111 added entries
+  are regime cycles inside V2's held positions; each is
+  an exit + re-entry round-trip cost. Brokerage + slippage
+  dominate the blocking benefit on this universe.
+
+  MA crossover family chapter closed across 3 refutations
+  (V1 00e2141 + V2 8782a6a + V3 bfaa817). Defensive
+  property real, family dead as primary alpha generator.
+
+  Banked: WP-INFRA-INTRADAY-FILTER (defensive volume>0
+  filter for daily fetcher), WP-INFRA-UNIVERSE-CENTRALIZE
+  (consolidate duplicated TICKERS dicts), WP-DB-BENCHMARKS-
+  TABLE (separate indexes from stocks).
+  5 files changed, 541 insertions.
+  Gates: 8782a6a.

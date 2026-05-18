@@ -499,9 +499,10 @@ PRODUCTION STATE AT CLOSE:
   Engine + helper extraction trigger fires at second
   consumer (V2 grid sweep, next session).
 
-HEAD at SESSION 4 close: this commit (see
-`git log -1 --oneline`). Same no-placeholder pattern;
-opportunistic-backfill candidate at session-5 reconcile.
+HEAD at SESSION 4 close: 45d8220 (opportunistic backfill at
+session-5 close — the `git log -1 --oneline` wording was the
+no-placeholder pattern at write time; same pattern as the
+session-2 -> session-3 and session-3 -> session-4 backfills).
 
 TERMINAL STATES AT CLOSE:
   T1 — idle (closed WP-SIGNAL-MA-CROSSOVER-V1 +
@@ -516,3 +517,135 @@ IMMEDIATE QUEUE (SESSION 5):
   consumer of both the inline engine and the paginated-
   fetch helper from 00e2141) settled in that
   conversation before any Phase A fires.
+
+
+═══════════════════════════════════════════════════════
+SESSION 5 — 2026-05-18 / 2026-05-19 (AEST)
+═══════════════════════════════════════════════════════
+
+OPEN
+  Opened with HEAD = 45d8220 (session-4 close).
+  Foundation arc complete. Two signal-family WPs queued
+  for this session: GRID-V1 (engine extraction + 5-combo
+  parameter sweep with holdout split) and the conditional
+  REGIME-FILTER-V1 (banked at session-4 close pending V2
+  outcome).
+
+GRID-V1 design conversation
+  Locked: 5 (short, long) combos =
+  [(10,30), (20,50), (30,100), (50,100), (50,200)];
+  60/40 train/test split at 2024-07-01; aggregate-only
+  optimisation on train Sharpe with avg_total_return
+  tiebreak; per-ticker tuning banned as curve-fitting; V2
+  IS the second consumer so extract engine + signal +
+  paginated-fetch helper in this WP.
+
+WP-SIGNAL-MA-CROSSOVER-GRID-V1 (T1, 8782a6a)
+  Phase A surfaced 4 design questions (Q1: LONG_WINDOW
+  coupling in run_backtest; Q2: compute_buy_and_hold not
+  yet a function; Q3: signal-function destination; Q4:
+  PAGE_SIZE placement). Q1 escalated to engine API change
+  signal_fn -> signal_series (caller precomputes; engine
+  slices from first non-NaN). Q3 overrode T1's "defer"
+  recommendation — V2 is the legitimate second consumer.
+  Phase B shipped engine extraction (new src/backtest/
+  package + signals.py with ma_crossover_signal moved
+  with NaN warm-up contract + compute_buy_and_hold
+  extracted), V1 thin-caller refactor (byte-identical CBA
+  regression, md5 reconciled), V2 grid script. Headline:
+  every combo loses to B&H on train AND test alpha. V2
+  winner (50, 200) test alpha -5.16%, test Sharpe 0.635
+  — same combo as V1, by design the least-bad of the
+  family.
+
+REGIME-FILTER-V1 design conversation
+  Locked: regime ticker ^AXJO, regime window MA-200, same
+  5 combos and same 60/40 split as V2. One-off
+  seed_xjo.py rather than backfill_historical.py rerun
+  (scope keeps the WP atomic).
+
+WP-SIGNAL-MA-CROSSOVER-REGIME-FILTER-V1 (T1, bfaa817)
+  Phase A confirmed yfinance ^AXJO returns 1265 clean
+  rows with tz-aware Sydney + Adj Close == Close + zero
+  NaN. Calendar misalignment (1 day at start) + intraday
+  volume=0 bar identified; FK-order verified (stocks
+  before prices). Phase B seeded 1260 XJO rows (filtered
+  volume>0 + date<=2026-05-15; 5 historical zero-volume
+  bars dropped), appended regime_above_ma to
+  src/backtest/signals.py, ran V3 grid. First Phase B
+  attempt CRASHED on int(NaN) inside the engine — XJO's
+  5 historical zero-volume gaps land inside held
+  positions, breaking the engine's "NaN only at start"
+  assumption. Fixed with .ffill() on regime alignment
+  (matches live-trader "carry yesterday's regime through
+  missing data" semantic). V3 winner shifted to (30, 100)
+  but every cell of V2-vs-V3 delta is negative.
+  Churn-vs-block analysis: 80 V2 entries -> 160 V3
+  entries on (30, 100) universe-wide; 31 blocked + 111
+  new. The regime filter doesn't just block, it churns.
+  Refuted as an alpha generator; MA crossover family
+  chapter closes across 3 refutations (V1 + V2 + V3).
+
+PROCESS LEARNINGS
+  - First multi-WP session (excluding bootstrap arcs).
+    Two substantive commits + reconcile in one session.
+    Atomic-WP discipline held — each WP was its own
+    commit with V-walks, no scope creep across WP
+    boundaries.
+  - Engine extraction with API signature change was the
+    right architecture call. The new signal_series shape
+    enabled V3's holdout-split-with-precomputed-signal
+    pattern that signal_fn couldn't have done cleanly.
+  - The .ffill() deviation in V3 is a real new pattern,
+    not a bug fix. Mid-series NaN gaps in auxiliary
+    indicators are a class problem; banked as calibration
+    for future multi-signal composition.
+  - V2 test > train Sharpe inversion + V3 churn-
+    dominates-block are both real empirical findings
+    worth carrying forward. The MA crossover family is
+    done as a primary strategy on this universe; its
+    defensive properties remain real.
+
+═══════════════════════════════════════════════════════
+SESSION 5 CLOSE — 2026-05-19 AEST
+═══════════════════════════════════════════════════════
+
+SHIPPED (2 WPs with commits + this reconcile):
+  8782a6a — WP-SIGNAL-MA-CROSSOVER-GRID-V1
+  bfaa817 — WP-SIGNAL-MA-CROSSOVER-REGIME-FILTER-V1
+
+PRODUCTION STATE AT CLOSE:
+  Supabase: 11 stocks (added ^AXJO at bfaa817),
+            13,910 prices (12,650 blue-chip + 1,260 XJO),
+            0 signals.
+  Code: src/backtest/ package live (engine.py +
+        signals.py + __init__.py). scripts/ now hosts
+        V1 (thin caller), V2 (grid), V3 (regime grid),
+        seed_xjo, daily fetcher, historical backfill.
+  MA crossover family closed across three refutations
+  (00e2141 V1 + 8782a6a V2 + bfaa817 V3). Defensive
+  sleeve property real (CSL.AX V1 +47.6% alpha during
+  60% B&H drawdown). Family dead as primary alpha
+  generator on ASX blue chips 2022-2026.
+
+HEAD at SESSION 5 close: this commit (see
+`git log -1 --oneline`). Same no-placeholder pattern;
+opportunistic-backfill candidate at session-6 reconcile.
+
+TERMINAL STATES AT CLOSE:
+  T1 — idle (closed WP-SIGNAL-MA-CROSSOVER-GRID-V1,
+              WP-SIGNAL-MA-CROSSOVER-REGIME-FILTER-V1,
+              + WP-RECONCILE-SESSION-5-CLOSE)
+  T2-T5 — idle / spare; not activated this session
+
+IMMEDIATE QUEUE (SESSION 6):
+  Design conversation in fresh chat on next signal
+  family. Options on the table: momentum (price-driven),
+  mean reversion (Bollinger / RSI), volatility breakout,
+  universe expansion (WP-DATA-UNIVERSE-ASX200).
+  Speculative regime-filter variants retired with the
+  MA family. Newly banked WPs ready for selection:
+  WP-INFRA-INTRADAY-FILTER, WP-INFRA-UNIVERSE-CENTRALIZE,
+  WP-DB-BENCHMARKS-TABLE. Plus carryover Foundation
+  items (WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER,
+  WP-UI-STREAMLIT-SHELL gated, WP-UI-MA-OVERLAY).

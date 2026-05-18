@@ -37,8 +37,10 @@ LOCKED DECISIONS
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-WP-SIGNAL-MA-CROSSOVER-GRID-V1 — queued for SESSION 5 design conversation
-(fresh chat). Design questions banked in Foundation list below.
+(between WPs — SESSION 6 opens with design conversation on next
+signal family: momentum / mean-reversion / volatility breakout /
+universe expansion. MA crossover family closed across 3 refutations
+this session — see _build_log.md and _timeline.md.)
 
 Closed in SESSION 1:
   WP-BOOTSTRAP-REPO-INIT              — 73b2c8d
@@ -75,7 +77,19 @@ Closed in SESSION 4:
                                                   signal backtest — engine
                                                   proven, signal refuted at
                                                   avg -30% alpha over B&H)
-  WP-RECONCILE-SESSION-4-CLOSE        — (see `git log -1 --oneline`)
+  WP-RECONCILE-SESSION-4-CLOSE        — 45d8220  (opportunistic backfill
+                                                  at session-5 close)
+
+Closed in SESSION 5:
+  WP-SIGNAL-MA-CROSSOVER-GRID-V1      — 8782a6a  (T1, engine extraction +
+                                                  V2 5-combo grid — every
+                                                  combo loses to B&H on
+                                                  train AND test alpha)
+  WP-SIGNAL-MA-CROSSOVER-REGIME-FILTER-V1
+                                      — bfaa817  (T1, XJO MA-200 regime
+                                                  filter — refuted; filter
+                                                  churns more than it blocks)
+  WP-RECONCILE-SESSION-5-CLOSE        — (see `git log -1 --oneline`)
 
 See _build_log.md for commit details.
 
@@ -83,31 +97,6 @@ See _build_log.md for commit details.
 OPEN WPs (BANKED, NOT STARTED)
 ═══════════════════════════════════════════════════════
 Foundation (Phase 1, months 1-2):
-  WP-SIGNAL-MA-CROSSOVER-GRID-V1 — Parameter grid sweep of MA crossover family
-                                   on the 10 ASX blue chips. Sequel to
-                                   WP-SIGNAL-MA-CROSSOVER-V1 (00e2141, refuted
-                                   at avg -30% alpha). Settle these in
-                                   SESSION 5 design conversation BEFORE
-                                   Phase A fires:
-                                     - Parameter grid scope: 5-7 (short, long)
-                                       combos, e.g. 10/30, 20/50, 30/100,
-                                       50/100, 50/200. Constraint short < long.
-                                     - Holdout split: single time-based split
-                                       (likely) vs walk-forward (v2-of-v2).
-                                     - Optimisation metric: Sharpe (recommend)
-                                       vs total return vs alpha-over-B&H.
-                                       Report all three regardless.
-                                     - Aggregate vs per-ticker optimisation:
-                                       AGGREGATE only. Per-ticker is curve-
-                                       fitting on 10 tickers × 4y of data —
-                                       banked as anti-pattern in _ideas.md.
-                                     - Second-consumer extraction trigger: V2
-                                       IS the second consumer of the inline
-                                       engine + paginated-fetch helper from
-                                       00e2141. Decide in SESSION 5 design
-                                       whether to extract to src/backtest/ +
-                                       src/data/yfinance_utils.py before V2
-                                       Phase B or fold into V2 itself.
   WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
                                  — Generalize the 3-attempt exponential
                                    backoff currently duplicated as
@@ -123,14 +112,19 @@ Foundation (Phase 1, months 1-2):
                                    GATED ON: WP-UI-FRONTEND-STACK-ARM64-RESOLUTION
   WP-UI-MA-OVERLAY               — 20/50/200-day MA overlay
 
-Foundation arc effectively complete (daily fetcher 7bacd7f, src-layout
-4be60e1+fd8ba2e, historical backfill def6718, V1 backtest 00e2141).
-Production state at session-4 close: 10 stocks, 12,650 prices, 0 signals;
-engine + paginated-fetch path proven. Next gate is the signal arc:
-WP-SIGNAL-MA-CROSSOVER-GRID-V1 in session 5, then additional signal
-families (momentum, mean reversion, etc.) once the MA family is fully
-characterised. UI shell remains gated on
-WP-UI-FRONTEND-STACK-ARM64-RESOLUTION.
+Foundation arc complete. MA crossover signal family fully
+characterised across three refutations (00e2141 V1 single, 8782a6a
+V2 grid, bfaa817 V3 regime-filtered). Engine + signal + paginated-
+fetch helpers live in src/backtest/ + src/data/yfinance_utils.py.
+
+Production state at session-5 close: 11 stocks (added ^AXJO regime
+ticker), 13,910 prices (12,650 blue-chip + 1,260 XJO), 0 signals.
+
+Next gate is the signal arc: SESSION 6 opens with design
+conversation on the next signal family — momentum / mean-reversion
+/ volatility breakout / universe expansion. Speculative regime-
+filter variants retired with the MA family. UI shell remains
+gated on WP-UI-FRONTEND-STACK-ARM64-RESOLUTION.
 
 Signal design (Phase 2, months 2-4):
   WP-SIGNAL-HYPOTHESIS-V1       — one clear hypothesis (leaning earnings surprise + RSI<40 + above 200MA)
@@ -150,7 +144,8 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-T1 — idle (closed WP-SIGNAL-MA-CROSSOVER-V1 + this reconcile)
+T1 — idle (closed WP-SIGNAL-MA-CROSSOVER-GRID-V1,
+            WP-SIGNAL-MA-CROSSOVER-REGIME-FILTER-V1, + this reconcile)
 T2 — idle / spare (not activated this session)
 T3 — idle / spare (not activated this session)
 T4 — held / spare

@@ -117,20 +117,42 @@ WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
   ENRICHMENT is the likely trigger) makes the duplication
   actively painful.
 
-WP-INFRA-YFUTILS-FETCH-PRICES-PAGINATED
-  Extract the paginated read helper from
-  scripts/backtest_ma_crossover.py into src/data/yfinance_utils.py.
-  PostgREST free-tier db-max-rows = 1000 caps .select() reads from
-  `prices` regardless of .range() or .limit() overrides. Paginated
-  fetch is mandatory for >1000-row reads (per-ticker history is
-  ~1265 rows after 5y backfill). Proposed signature:
-    fetch_prices_full(client, ticker, page_size=1000) -> list[dict]
-  Current paginated-read consumers: 1 (scripts/backtest_ma_crossover.py
-  at 00e2141). Note: scripts/backfill_historical.py writes only, does
-  NOT trigger this. Extraction fires at 2nd consumer, which will be
-  either WP-SIGNAL-MA-CROSSOVER-GRID-V1 or WP-UI-STREAMLIT-SHELL,
-  whichever ships first. Surfaced in WP-SIGNAL-MA-CROSSOVER-V1
-  Phase A; banked at session-4 close.
+WP-INFRA-INTRADAY-FILTER
+  scripts/fetch_yfinance.py and scripts/backfill_historical.py
+  currently have no volume>0 / "is this bar finalised?" filter.
+  Today's intraday bars get picked up by daily runs during market
+  hours (volume starts at 0 and accumulates through the session).
+  scripts/seed_xjo.py at bfaa817 applies the right pattern inline
+  (df = df[df['volume'] > 0]) and dropped 5 historical zero-volume
+  ^AXJO bars + would have dropped today's intraday bar if yfinance
+  had served one. Apply the same filter inline in both fetcher
+  scripts, OR extract a shared helper in src/data/yfinance_utils.py
+  (intraday_filter or finalised_bars_only). Trigger: next time the
+  daily fetcher runs during market hours or a stock's intraday bar
+  surfaces as a row in production prices.
+
+WP-INFRA-UNIVERSE-CENTRALIZE
+  TICKERS dict is duplicated across scripts/fetch_yfinance.py and
+  scripts/backfill_historical.py (now 11 entries each after ^AXJO
+  added in bfaa817). Two consumers managed manually so far; drift
+  is a real risk on next ticker addition. Consolidate into
+  src/data/universe.py with BLUE_CHIPS_ASX (10) + BENCHMARKS
+  (1: ^AXJO) lists, both consumed via import. Trigger: 3rd
+  consumer adds the same dict, OR WP-DATA-UNIVERSE-ASX200 fires
+  (which would inflate the duplication from 11 to 200+ entries).
+
+WP-DB-BENCHMARKS-TABLE
+  ^AXJO sits in the stocks table as of bfaa817. The stocks table
+  semantically holds tradeable equities; an index is a different
+  thing. Functionally fine (FK from prices works, queries work,
+  is_active flag works), cosmetically a mismatch. Refactor: add
+  a benchmarks table with the same shape as stocks but semantically
+  for indexes / reference series, migrate ^AXJO over, update FK
+  from prices (via polymorphic pattern OR split into prices +
+  benchmark_prices). Trigger: 3+ benchmark series (e.g. ^AXJO +
+  ^GSPC + ^IXIC for US comparison) OR cosmetic mismatch starts
+  causing actual confusion. Defer until then; the current state
+  is honest and works.
 
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
@@ -187,11 +209,6 @@ Process learnings (SESSION 4):
   filter or defensive sleeve, NOT a primary alpha generator.
   Relevant input for any future signal that incorporates MA
   crossovers in any form.
-- Regime filter idea (banked for V3+): only take MA crossover
-  entries when broader index (XJO) is above its own MA-200. Bank
-  conditional on WP-SIGNAL-MA-CROSSOVER-GRID-V1 also refuting the
-  family across sensible parameter combos. Signal modification, not
-  parameter sweep.
 - Per-ticker parameter tuning is curve-fitting on this universe.
   Tuning (short, long) per ticker on 10 tickers × 4y multiplies the
   parameter search space by 10x with no statistical justification.
@@ -202,3 +219,48 @@ Process learnings (SESSION 4):
   calibration to CLAUDE.md environment notes (item 8 — see
   CLAUDE.md). Validated session 4: clean Phase B stdout run with
   ASCII-only discipline after a Phase A probe-exit crash on `→`.
+
+Process learnings (SESSION 5):
+- Engine protocol: signal_fn -> signal_series. The V2 extraction
+  (8782a6a) changed run_backtest's signature: caller precomputes
+  the position series, engine slices from first non-NaN. Required
+  for V3's holdout-with-full-series-precompute pattern (compute
+  signal once over full series, slice into train/test, two engine
+  calls). signal_fn-as-argument couples signal-computation timing
+  to engine internals; signal_series-as-argument cleanly separates
+  the two. Pattern validated, applies to any future signal family.
+- ffill pattern for multi-signal composition (V3 deviation): when
+  joining a primary signal with an auxiliary indicator that may
+  have data gaps (XJO's 5 historical zero-volume days), .ffill()
+  the auxiliary onto the primary's date index BEFORE element-wise
+  multiplication. Plain NaN propagation makes the engine see
+  1 -> NaN -> 1 as exit + re-entry; ffill carries the previous
+  day's auxiliary state through the gap, matching the realistic
+  "no data today, carry yesterday forward" semantics a live trader
+  would use.
+- Empirical anti-overfit inversion (V2): test Sharpe HIGHER than
+  train Sharpe across all 5 (short, long) combos. Standard overfit
+  pattern is the opposite (train > test). The bull market in the
+  test slice (2024-07 -> 2026-05) flattered the signals more than
+  the train slice (2022-02 -> 2024-07); holdout-period regime
+  matters as much as signal logic. Lesson: holdout Sharpe alone is
+  not a free pass; check alpha-over-B&H in BOTH windows.
+- Empirical churn-vs-block (V3): regime filter on a bull-trending
+  universe with mostly-long stock signals introduces ~3.5x more
+  entries than it blocks (universe-wide on V3 winner (30, 100):
+  80 V2 entries -> 160 V3 entries; 31 blocked, 111 added). Each
+  added entry is a regime cycle inside a held position = exit +
+  re-entry round-trip cost. The blocking benefit must overcome the
+  churn cost; on this universe / window it doesn't. Future regime-
+  filter designs should consider entry-only gating (regime gates
+  new entries but never forces exits).
+- Data quality (yfinance ^AXJO): 5 historical zero-volume bars in
+  the 2021-2026 window (likely index reconstitution / data-gap
+  days). volume>0 filter at seed time was sufficient to drop them;
+  worth knowing for future benchmark-series seeds.
+- Best-parameters context-dependence: V2 winner (50, 200) became
+  V3's worst-degrading combo; V3 winner shifted to (30, 100). The
+  "best" (short, long) combo isn't intrinsic — it depends on the
+  filter / regime / portfolio context applied on top. Lesson:
+  re-optimise per signal architecture; don't carry V2-winner
+  parameters as defaults into V3-style WPs.
