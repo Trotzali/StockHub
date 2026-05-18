@@ -37,6 +37,7 @@ TICKERS: dict[str, str] = {
     "WOW.AX": "Woolworths Group",
     "TLS.AX": "Telstra Group",
     "CSL.AX": "CSL Limited",
+    "^AXJO":  "S&P/ASX 200 Index",
 }
 
 FETCH_PERIOD = "7d"

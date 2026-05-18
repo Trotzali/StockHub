@@ -28,3 +28,23 @@ def ma_crossover_signal(df: pd.DataFrame,
     ma_l = df["adj_close"].rolling(long).mean()
     pos = (ma_s > ma_l).astype(float)
     return pos.where(ma_l.notna(), float("nan"))
+
+
+def regime_above_ma(df: pd.DataFrame,
+                    window: int = 200,
+                    close_col: str = "adj_close") -> pd.Series:
+    """Regime filter: 1.0 when close > rolling-mean(window), 0.0 otherwise.
+
+    Same NaN-warm-up + 0/1 contract as ma_crossover_signal. Designed for
+    use as a regime filter on a primary signal via date-aligned element-
+    wise multiplication at the call site (see
+    scripts/backtest_ma_crossover_regime_grid.py).
+
+    Returns:
+        Series of length len(df). First window-1 rows are NaN (MA-window
+        undefined). Subsequent rows are 1.0 (regime "on") or 0.0
+        (regime "off"). Caller supplies the alignment / multiplication.
+    """
+    ma = df[close_col].rolling(window).mean()
+    pos = (df[close_col] > ma).astype(float)
+    return pos.where(ma.notna(), float("nan"))
