@@ -72,3 +72,37 @@ def upsert_prices(client: Client, records: list[dict]) -> int:
         ).execute()
         total += len(chunk)
     return total
+
+
+PAGE_SIZE = 1000
+
+
+def fetch_prices_full(client: Client, ticker: str,
+                     page_size: int = PAGE_SIZE) -> list[dict]:
+    """Paginated read of (trade_date, adj_close) for one ticker.
+
+    PostgREST free-tier caps responses at 1000 rows regardless of
+    .range() / .limit() overrides (verified in WP-SIGNAL-MA-CROSSOVER-V1
+    Phase A). Per-ticker history is ~1265 rows after the 5y backfill, so
+    pagination is mandatory. Returns a list of dicts; caller wraps in
+    pd.DataFrame and converts trade_date / adj_close to typed columns.
+
+    Extracted from scripts/backtest_ma_crossover.py in
+    WP-SIGNAL-MA-CROSSOVER-GRID-V1 (second-consumer trigger).
+    """
+    rows: list[dict] = []
+    offset = 0
+    while True:
+        r = (
+            client.table("prices")
+            .select("trade_date,adj_close")
+            .eq("ticker", ticker)
+            .order("trade_date")
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+        rows.extend(r.data)
+        if len(r.data) < page_size:
+            break
+        offset += page_size
+    return rows

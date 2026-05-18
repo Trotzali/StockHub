@@ -1,30 +1,28 @@
-"""scripts/backtest_ma_crossover.py -- WP-SIGNAL-MA-CROSSOVER-V1.
+"""scripts/backtest_ma_crossover.py -- WP-SIGNAL-MA-CROSSOVER-V1 (refactored).
 
 50-day / 200-day SMA crossover backtest on the ASX blue-chip universe.
+Thin caller of extracted modules:
+- src.data.yfinance_utils.fetch_prices_full (paginated read)
+- src.backtest.signals.ma_crossover_signal
+- src.backtest.engine.run_backtest
 
-Locked decisions (orchestrator chat, not re-litigated here):
+Locked decisions (unchanged from V1 — see WP-SIGNAL-MA-CROSSOVER-V1):
 - Signal: golden cross (MA-50 > MA-200) = long; death cross = flat.
 - Universe: all rows in `stocks` (currently 10 .AX tickers).
 - Hold rule: until opposite signal. No stops / targets / time limits.
-- Execution: trade at signal-day close (same-day fill).
-- Costs: 0.1% brokerage per side + $0.01 slippage per share per side
-  on the signal strategy. B&H baseline is gross (no costs) to match
-  the V-walk verification formula.
+- Execution: trade at signal-day close.
+- Costs: 0.1% brokerage + $0.01 slippage per share per side.
 - Per-ticker $10,000 starting capital; 10 independent backtests.
-- Warm-up: first LONG_WINDOW-1 rows have no MA-long -> position
-  flat -> excluded from equity curve and metrics.
-- Open positions at window end MTM'd to final adj_close; NOT counted
-  as closed trades.
+- Warm-up: rows with NaN signal (no MA-long) excluded by the engine.
+- Open positions at window end MTM'd to final adj_close.
+- B&H baseline is gross.
 - Output: per-ticker + aggregate metrics to stdout (ASCII only);
   results/equity_curve_<TICKER_AX>.csv per ticker.
-- Engine inline as run_backtest(). Extraction to src/backtest/
-  deferred to the second consumer (V2 grid-sweep or UI shell),
-  mirroring the src-layout split rule from 4be60e1.
 
-Pagination note: the supabase free-tier PostgREST caps responses at
-1000 rows regardless of .range/.limit (verified Phase A). Per-ticker
-history is ~1265 rows so pagination is mandatory. Helper inlined
-here; extraction WP banked (WP-INFRA-YFUTILS-FETCH-PRICES-PAGINATED).
+Engine + signal + paginated-fetch helper extracted to src/backtest/
++ src/data/yfinance_utils.py in WP-SIGNAL-MA-CROSSOVER-GRID-V1
+(second-consumer trigger). V1 behaviour preserved byte-identical
+(regression V-walked at extraction).
 """
 import os
 import sys
@@ -33,235 +31,20 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
-from supabase import Client, create_client
+from supabase import create_client
 
-# ----- Constants -----
-
-STARTING_CAPITAL = 10_000.0
-BROKERAGE_PCT = 0.001        # 0.1% per side
-SLIPPAGE_PER_SHARE = 0.01    # $0.01 per share per side
-SHORT_WINDOW = 50
-LONG_WINDOW = 200
-TRADING_DAYS_PER_YEAR = 252
-PAGE_SIZE = 1000
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.backtest.engine import (
+    BROKERAGE_PCT,
+    SLIPPAGE_PER_SHARE,
+    STARTING_CAPITAL,
+    run_backtest,
+)
+from src.backtest.signals import LONG_WINDOW, SHORT_WINDOW, ma_crossover_signal
+from src.data.yfinance_utils import fetch_prices_full
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = PROJECT_ROOT / "results"
-
-
-# ----- Data loading (local helper; do not extract this WP) -----
-
-def fetch_full_series(client: Client, ticker: str) -> pd.DataFrame:
-    """Paginated fetch of (trade_date, adj_close) for one ticker.
-
-    PostgREST free-tier caps at 1000 rows per request regardless of
-    .range / .limit. Phase A confirmed pagination is mandatory.
-    """
-    rows: list[dict] = []
-    offset = 0
-    while True:
-        r = (
-            client.table("prices")
-            .select("trade_date,adj_close")
-            .eq("ticker", ticker)
-            .order("trade_date")
-            .range(offset, offset + PAGE_SIZE - 1)
-            .execute()
-        )
-        rows.extend(r.data)
-        if len(r.data) < PAGE_SIZE:
-            break
-        offset += PAGE_SIZE
-    df = pd.DataFrame(rows)
-    df["trade_date"] = pd.to_datetime(df["trade_date"])
-    df["adj_close"] = pd.to_numeric(df["adj_close"])
-    return df
-
-
-# ----- Signal -----
-
-def ma_crossover_signal(df: pd.DataFrame, short: int = SHORT_WINDOW,
-                        long: int = LONG_WINDOW) -> pd.Series:
-    """Long (1) when MA-short > MA-long, flat (0) otherwise.
-
-    Warm-up rows (MA-long NaN) coerced to 0.
-    """
-    ma_s = df["adj_close"].rolling(short).mean()
-    ma_l = df["adj_close"].rolling(long).mean()
-    pos = (ma_s > ma_l).astype(int)
-    return pos.where(ma_l.notna(), 0)
-
-
-# ----- Backtest engine (inline; extract to src/backtest/ at v2) -----
-
-def run_backtest(ticker: str, df: pd.DataFrame, signal_fn,
-                 *,
-                 starting_capital: float = STARTING_CAPITAL,
-                 brokerage_pct: float = BROKERAGE_PCT,
-                 slippage_per_share: float = SLIPPAGE_PER_SHARE) -> dict:
-    """Simulate signal_fn against df; return metrics + equity curve + trades."""
-    pos = signal_fn(df)
-    df = df.assign(pos=pos)
-
-    # Slice to evaluation window: first LONG_WINDOW-1 rows have no MA-long.
-    df_eval = df.iloc[LONG_WINDOW - 1:].reset_index(drop=True)
-
-    cash = starting_capital
-    shares = 0.0
-    equity_curve_rows: list[dict] = []
-    trades: list[dict] = []
-    open_trade: dict | None = None
-    prev_pos = 0
-
-    for _, row in df_eval.iterrows():
-        cur_pos = int(row["pos"])
-        price = float(row["adj_close"])
-        date = row["trade_date"]
-
-        if prev_pos == 0 and cur_pos == 1:
-            # ENTRY: buy at close + slippage; brokerage on notional.
-            entry_price = price + slippage_per_share
-            shares = cash / (entry_price * (1 + brokerage_pct))
-            notional = shares * entry_price
-            brokerage = notional * brokerage_pct
-            cash = cash - notional - brokerage
-            open_trade = {
-                "entry_date": date,
-                "entry_price": entry_price,
-                "entry_shares": shares,
-                "entry_brokerage": brokerage,
-            }
-        elif prev_pos == 1 and cur_pos == 0:
-            # EXIT: sell at close - slippage; brokerage on notional.
-            exit_price = price - slippage_per_share
-            notional = shares * exit_price
-            brokerage = notional * brokerage_pct
-            cash = cash + notional - brokerage
-            assert open_trade is not None
-            entry = open_trade
-            trade_pnl = (
-                (exit_price - entry["entry_price"]) * entry["entry_shares"]
-                - entry["entry_brokerage"] - brokerage
-            )
-            trade_return_pct = trade_pnl / (
-                entry["entry_price"] * entry["entry_shares"]
-            )
-            trades.append({
-                "entry_date": entry["entry_date"],
-                "entry_price": entry["entry_price"],
-                "exit_date": date,
-                "exit_price": exit_price,
-                "shares": entry["entry_shares"],
-                "pnl": trade_pnl,
-                "return_pct": trade_return_pct,
-            })
-            shares = 0.0
-            open_trade = None
-
-        # MTM equity each day: cash + open-position value at close.
-        equity = cash + shares * price
-        equity_curve_rows.append({"trade_date": date, "signal_equity": equity})
-        prev_pos = cur_pos
-
-    sig_eq = pd.DataFrame(equity_curve_rows)
-
-    # B&H baseline: gross, no costs (matches V-walk formula).
-    first_price = float(df_eval.iloc[0]["adj_close"])
-    bh_eq_series = starting_capital * df_eval["adj_close"] / first_price
-    bh_eq = pd.DataFrame({
-        "trade_date": df_eval["trade_date"].values,
-        "buy_hold_equity": bh_eq_series.values,
-    })
-
-    eq_df = sig_eq.merge(bh_eq, on="trade_date")
-
-    sig_metrics = compute_metrics(
-        eq_df["signal_equity"], trades, starting_capital, eq_df["trade_date"]
-    )
-    bh_metrics = compute_metrics(
-        eq_df["buy_hold_equity"], [], starting_capital, eq_df["trade_date"]
-    )
-
-    return {
-        "ticker": ticker,
-        "metrics": sig_metrics,
-        "bh_metrics": bh_metrics,
-        "trades": trades,
-        "equity_curve": eq_df,
-    }
-
-
-# ----- Metrics -----
-
-def compute_metrics(equity: pd.Series, trades: list[dict],
-                    starting_capital: float, dates: pd.Series) -> dict:
-    """Headline metrics from an equity curve + trade list.
-
-    Robust to trade_count == 0: win-rate / avg-win / avg-loss returned
-    as None. Sharpe is NaN if equity is flat (no daily volatility).
-    """
-    final_eq = float(equity.iloc[-1])
-    total_return_dollar = final_eq - starting_capital
-    total_return_pct = total_return_dollar / starting_capital
-
-    n_days = len(equity)
-    if n_days > 1 and final_eq > 0:
-        ann_return = (
-            (final_eq / starting_capital) ** (TRADING_DAYS_PER_YEAR / n_days) - 1
-        )
-    else:
-        ann_return = float("nan")
-
-    daily_ret = equity.pct_change().dropna()
-    if len(daily_ret) > 1 and float(daily_ret.std()) > 0:
-        sharpe = float(daily_ret.mean()) / float(daily_ret.std()) * np.sqrt(
-            TRADING_DAYS_PER_YEAR
-        )
-    else:
-        sharpe = float("nan")
-
-    running_max = equity.cummax()
-    dd_dollar = equity - running_max
-    dd_pct = dd_dollar / running_max
-    max_dd_dollar = float(dd_dollar.min())
-    max_dd_pct = float(dd_pct.min())
-
-    n_trades = len(trades)
-    win_rate = None
-    avg_win_dollar = avg_win_pct = None
-    avg_loss_dollar = avg_loss_pct = None
-    if n_trades > 0:
-        wins = [t for t in trades if t["pnl"] > 0]
-        losses = [t for t in trades if t["pnl"] <= 0]
-        win_rate = len(wins) / n_trades
-        if wins:
-            avg_win_dollar = float(np.mean([t["pnl"] for t in wins]))
-            avg_win_pct = float(np.mean([t["return_pct"] for t in wins]))
-        else:
-            avg_win_dollar = 0.0
-            avg_win_pct = 0.0
-        if losses:
-            avg_loss_dollar = float(np.mean([t["pnl"] for t in losses]))
-            avg_loss_pct = float(np.mean([t["return_pct"] for t in losses]))
-        else:
-            avg_loss_dollar = 0.0
-            avg_loss_pct = 0.0
-
-    return {
-        "final_equity": final_eq,
-        "total_return_dollar": total_return_dollar,
-        "total_return_pct": total_return_pct,
-        "ann_return": ann_return,
-        "sharpe": sharpe,
-        "max_dd_dollar": max_dd_dollar,
-        "max_dd_pct": max_dd_pct,
-        "n_trades": n_trades,
-        "win_rate": win_rate,
-        "avg_win_dollar": avg_win_dollar,
-        "avg_win_pct": avg_win_pct,
-        "avg_loss_dollar": avg_loss_dollar,
-        "avg_loss_pct": avg_loss_pct,
-    }
 
 
 # ----- Output (ASCII only) -----
@@ -379,8 +162,13 @@ def main() -> int:
 
     results = []
     for t in tickers:
-        df = fetch_full_series(client, t)
-        result = run_backtest(t, df, ma_crossover_signal)
+        records = fetch_prices_full(client, t)
+        df = pd.DataFrame(records)
+        df["trade_date"] = pd.to_datetime(df["trade_date"])
+        df["adj_close"] = pd.to_numeric(df["adj_close"])
+        df = df.sort_values("trade_date").reset_index(drop=True)
+        signal = ma_crossover_signal(df)
+        result = run_backtest(t, df, signal)
         results.append(result)
         print_ticker_block(t, result)
 
