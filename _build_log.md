@@ -285,3 +285,117 @@ bfaa817 — 2026-05-19 — WP-SIGNAL-MA-CROSSOVER-REGIME-FILTER-V1
   TABLE (separate indexes from stocks).
   5 files changed, 541 insertions.
   Gates: 8782a6a.
+
+═══════════════════════════════════════════════════════
+SESSION 6 — 2026-05-19
+═══════════════════════════════════════════════════════
+
+bfbae14 — 2026-05-19 — WP-SIGNAL-MEAN-REVERSION-ZSCORE-V1
+  6-combo z-score mean-reversion grid sweep across 10 blue
+  chips with 60/40 holdout at 2024-07-01. New
+  mean_reversion_zscore_signal in src/backtest/signals.py
+  (stateful mean-touch exit: enter when z < -threshold,
+  exit when z >= 0; population stdev, ddof=0). New
+  scripts/backtest_mean_reversion_grid.py. Engine reuse
+  via existing signal_series protocol.
+
+  Headline: REFUTED. 6/6 combos negative test alpha vs
+  B&H. Winner (window=30, threshold=2.0) aggregate train
+  Sharpe 0.422; test alpha -18.30% (B&H test Sharpe 0.654).
+  Entry-count multiplier 5.25x vs V2 MA crossover winner
+  — churn-cost mechanism reaffirmed across signal families.
+  Two spec amendments documented in commit body: V2
+  train-mask convention (`<=`) for direct comparability;
+  winner selection on aggregate TRAIN Sharpe (not test, to
+  avoid leakage).
+  Gates: 283112f.
+
+fe9100e — 2026-05-19 — WP-INFRA-INTRADAY-FILTER
+  Defensive volume<=0 row filter added to
+  scripts/fetch_yfinance.py and
+  scripts/backfill_historical.py between existing NaN drop
+  and Supabase upsert. Drops rows where volume is None,
+  NaN, or <= 0; logs per-ticker drop counts (suppressed
+  when zero). Hardens against yfinance returning volume==0
+  with all other OHLC columns populated.
+
+  Production probe found 7 such rows on existing blue
+  chips (ANZ.AX x3, CSL.AX x2, NAB.AX x1, RIO.AX x1) —
+  banked as WP-INFRA-PRICES-ZEROVOL-CLEANUP.
+  Gates: bfbae14.
+
+4b9037b — 2026-05-19 — WP-INFRA-SCHEMA-DRIFT-SCRIPT
+  Created scripts/verify_schema.py (206 lines). Reads
+  expected schema (hardcoded with comment pointer to
+  migrations/001_initial_schema.sql) and queries Supabase
+  PostgREST OpenAPI (GET /rest/v1/ with
+  Accept: application/openapi+json) for deployed state.
+  Diffs per-table, per-column: missing/extra
+  tables/columns, type mismatches, NOT NULL mismatches,
+  PK mismatches. ASCII-only stdout; exit 0 on SCHEMA CLEAN,
+  1 on drift.
+
+  Production run at fe9100e: SCHEMA CLEAN (25/25 columns
+  across stocks, prices, signals).
+
+  Notable Phase A finding: PostgREST does not expose
+  system schemas (information_schema). Canonical
+  introspection path is the OpenAPI endpoint, which stays
+  inside the locked "supabase-py over HTTPS only" decision
+  (no native PG driver, no RPC). Deferred to a future v2
+  WP: defaults, indexes, triggers, CHECK constraints, FK
+  targets, numeric precision/scale.
+
+  T3 exemplified halt-and-resume discipline during Phase B
+  when T2's mid-flight uncommitted mods polluted the
+  shared working tree; refused to touch T2's work; waited
+  for orchestrator-authorised resume.
+  Gates: fe9100e.
+
+1e724b2 — 2026-05-19 — WP-INFRA-UNIVERSE-CENTRALIZE
+  Consolidated TICKERS dict (previously duplicated across
+  scripts/fetch_yfinance.py and
+  scripts/backfill_historical.py) into
+  src/data/universe.py (62 lines). Both scripts now import
+  from the central module. BLUE_CHIPS_ASX (10 tickers,
+  alphabetical) and BENCHMARKS (["^AXJO"]) lists added for
+  downstream consumers needing separated views. TICKERS
+  preserves flat dict[str, str] shape and CBA-first
+  insertion order from the original inline dicts.
+
+  Net: 27 lines of duplication removed; single source of
+  truth established for the universe.
+  Gates: 4b9037b.
+
+2146b34 — 2026-05-19 — WP-DATA-UNIVERSE-ASX200
+  Universe expanded 10 blue chips -> 200 ASX 200
+  constituents + ^AXJO benchmark. ASX_200 list (sorted
+  alphabetically, 200 entries) added to
+  src/data/universe.py; TICKERS extended with 190 new
+  entries (10 entries overlapping with blue chips
+  preserved byte-unchanged).
+
+  Source: Wikipedia S&P/ASX 200 constituents page
+  (https://en.wikipedia.org/wiki/S%26P/ASX_200), parsed
+  via bs4 direct table extraction. Snapshot
+  2026-05-19T06:56+10:00. Chosen over Finnhub (key empty),
+  yfinance .components (method nonexistent), ASX official
+  feed (market-cap proxy only), and STW ETF holdings (no
+  public endpoint).
+
+  scripts/seed_asx200.py (one-shot, idempotent via
+  on_conflict) fetched historical OHLCV via inline
+  per-ticker pattern (2nd consumer of the pattern;
+  consolidation banked as
+  WP-INFRA-YFUTILS-PERTICKER-INGEST for 3rd-consumer
+  trigger). 189/190 tickers succeeded in 218.8s
+  wall-clock; 1 failure: XYX.AX (Block, Inc.) — yfinance
+  returned 404, likely Yahoo ticker-mapping issue (banked
+  WP-DATA-XYX-RECOVER). XYX.AX has an orphan stocks row
+  without prices.
+
+  Pre/post: stocks 11 -> 201 (+190), prices
+  13,910 -> 239,694 (+225,784).
+  Gates: 1e724b2.
+
+  (Reconcile commits not logged per established convention.)

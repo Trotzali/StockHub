@@ -649,3 +649,189 @@ IMMEDIATE QUEUE (SESSION 6):
   WP-DB-BENCHMARKS-TABLE. Plus carryover Foundation
   items (WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER,
   WP-UI-STREAMLIT-SHELL gated, WP-UI-MA-OVERLAY).
+
+
+═══════════════════════════════════════════════════════
+SESSION 6 — 2026-05-19 (AEST)
+═══════════════════════════════════════════════════════
+
+OPEN
+  Opened with HEAD = 283112f (session-5 close). MA
+  crossover family closed across 3 refutations. Picked
+  mean-reversion (B) over momentum (A) for the next
+  signal hypothesis. Flagged universe-thesis tension up
+  front: ASX retail-noise edge thesis is weakest on most-
+  arbitraged blue chips, but kept the 10-blue-chip
+  universe for V2/V3 comparability.
+
+WP-SIGNAL-MEAN-REVERSION-ZSCORE-V1 (T1, bfbae14)
+  6-combo z-score grid with mean-touch exit, 60/40
+  holdout. Two amendments caught at Phase A: V2-train-
+  mask convention (`<=`, not `<`) flagged by T1 for
+  direct comparability; winner-on-test-Sharpe error in
+  spec (test-set leakage) caught and corrected to V2
+  convention (winner on aggregate train Sharpe).
+  REFUTED: 6/6 combos negative test alpha vs B&H.
+  Winner (30, 2.0) entry-count multiplier 5.25x vs MA
+  crossover V2 winner — churn-cost mechanism reaffirmed.
+  New mean_reversion_zscore_signal in
+  src/backtest/signals.py; new
+  scripts/backtest_mean_reversion_grid.py; engine reuse
+  via existing signal_series protocol.
+
+WP-INFRA-INTRADAY-FILTER (T2, fe9100e)
+  Defensive volume<=0 filter on daily fetch + historical
+  backfill. Drops rows where volume is None, NaN, or
+  <= 0; logs per-ticker drop counts (suppressed when
+  zero). Production probe surfaced 7 existing zero-
+  volume rows on blue chips (ANZ.AX x3, CSL.AX x2,
+  NAB.AX x1, RIO.AX x1), banked for cleanup as
+  WP-INFRA-PRICES-ZEROVOL-CLEANUP. Hardens against
+  yfinance returning volume==0 with all other OHLC
+  columns populated.
+
+WP-INFRA-SCHEMA-DRIFT-SCRIPT (T3, 4b9037b)
+  scripts/verify_schema.py (206 lines) via PostgREST
+  OpenAPI introspection (GET /rest/v1/ with
+  Accept: application/openapi+json). Diffs per-table,
+  per-column: missing/extra tables/columns, type
+  mismatches, NOT NULL mismatches, PK mismatches.
+  ASCII-only stdout; exit 0 on SCHEMA CLEAN, 1 on drift.
+  Production run at fe9100e: SCHEMA CLEAN 25/25 columns.
+  Phase A finding: PostgREST does not expose system
+  schemas (information_schema); OpenAPI endpoint is the
+  canonical introspection path within the "supabase-py
+  over HTTPS only" locked decision. Defaults, indexes,
+  triggers, CHECK constraints, FK targets, numeric
+  precision/scale deferred to v2 (banked
+  WP-INFRA-SCHEMA-DRIFT-V2). T3 hit a concurrency
+  tripwire during Phase B (T2's mid-flight uncommitted
+  mods polluted shared working tree), halted-without-
+  touching-T2's-work, resumed cleanly after T2 landed —
+  exemplary boundary respect.
+
+MID-SESSION PIVOT
+  Four refutations on the same 10-blue-chip universe in
+  roughly bull-market windows is enough evidence to vary
+  the universe constant. Flipped the session-6 ordering
+  (originally signal-first, then universe) to universe-
+  expansion-now.
+
+WP-INFRA-UNIVERSE-CENTRALIZE (T1, 1e724b2)
+  Consolidated the duplicated TICKERS dict
+  (scripts/fetch_yfinance.py +
+  scripts/backfill_historical.py) into
+  src/data/universe.py. BLUE_CHIPS_ASX (10) +
+  BENCHMARKS (["^AXJO"]) lists added for downstream
+  separated views; TICKERS preserves flat
+  dict[str, str] shape and CBA-first insertion order
+  from the original inline dicts. T1 caught an
+  architect-side bug in my A5 example (nested-dict shape
+  that contradicted the comment intent — actual shape is
+  flat dict[str, str]). Net: 27 lines of duplication
+  removed.
+
+WP-DATA-UNIVERSE-ASX200 (T2, 2146b34)
+  Universe expanded 20×: 10 blue chips -> 200 ASX 200
+  constituents + ^AXJO benchmark. Source: Wikipedia
+  S&P/ASX 200 page via bs4 direct parse. Finnhub
+  (key empty), yfinance .components (method
+  nonexistent), ASX feed (market-cap proxy only), and
+  STW ETF holdings (no public endpoint) all ruled out
+  at Phase A. seed_asx200.py (one-shot, idempotent)
+  fetched historical OHLCV per-ticker; 189/190 succeeded
+  in 218.8s; 1 failure (XYX.AX / Block, Inc., yfinance
+  404, banked WP-DATA-XYX-RECOVER). Pre/post: stocks
+  11 -> 201 (+190), prices 13,910 -> 239,694
+  (+225,784).
+
+PROCESS LEARNINGS
+  - First true concurrent multi-terminal session
+    (T1+T2+T3 in parallel across Phase 2; T1+T2 in
+    parallel across Phase 3). Five substantive commits
+    shipped without merge conflicts.
+  - Three architect-side mistakes caught by terminals
+    during the session: nested-dict TICKERS spec (T1
+    centralise), winner-on-test-Sharpe spec (T1 mean-
+    reversion), strict status assertion in concurrent
+    contexts (T2-intraday went pragmatic, T3 halted
+    strict, T1-centralise mitigation via explicit-
+    pathspec). All banked into locked decisions /
+    CLAUDE.md amendment WP. Phase A protocol caught what
+    it was designed to catch.
+  - Universe-thesis tension flagged at session open
+    rather than discovered mid-session — paid off in the
+    mid-session pivot decision.
+  - Churn-cost mechanism is now durable cross-family
+    (V3 + MR V1). Promoted from V3-specific calibration
+    to standing design constraint for any multi-
+    component strategy.
+  - Bull-market backdrop is the dominant explanatory
+    variable for all 4 session-4/5/6 refutations.
+    B&H Sharpe ~0.654 in rising market structurally
+    beats long-only signals trading less than 100%
+    time-in-market. Empirical, not execution flaw.
+
+═══════════════════════════════════════════════════════
+SESSION 6 CLOSE — 2026-05-19 AEST
+═══════════════════════════════════════════════════════
+
+SHIPPED (5 WPs with commits + this reconcile):
+  bfbae14 — WP-SIGNAL-MEAN-REVERSION-ZSCORE-V1
+  fe9100e — WP-INFRA-INTRADAY-FILTER
+  4b9037b — WP-INFRA-SCHEMA-DRIFT-SCRIPT
+  1e724b2 — WP-INFRA-UNIVERSE-CENTRALIZE
+  2146b34 — WP-DATA-UNIVERSE-ASX200
+
+PRODUCTION STATE AT CLOSE:
+  Supabase: 201 stocks, 239,694 prices, 0 signals.
+  Per-ticker coverage: 200 ASX 200 constituents + ^AXJO
+  benchmark; row counts vary by listing date (mature
+  listings ~1265 rows; IPOs post-2021 have shorter
+  histories; 5 named short-history tickers: CSC.AX 534,
+  FRW.AX 124, L1G.AX 155, LNW.AX 747, RYM.AX 148). One
+  orphan: XYX.AX has stocks row but 0 prices, banked
+  WP-DATA-XYX-RECOVER.
+  Code: src/data/universe.py centralises TICKERS,
+  BLUE_CHIPS_ASX, BENCHMARKS, ASX_200. Both fetcher
+  scripts import from it. scripts/verify_schema.py adds
+  PostgREST OpenAPI schema drift introspection.
+  Mean-reversion z-score family closed at V1 on blue
+  chips. Re-test on ASX 200 banked. MA crossover family
+  remains closed (3 refutations from sessions 4-5).
+  Momentum and volatility-breakout families still
+  untested. Cumulative: 24 commits on master since
+  inception.
+
+HEAD at SESSION 6 close: this commit (see
+`git log -1 --oneline`). Same no-placeholder pattern as
+prior sessions.
+
+TERMINAL STATES AT CLOSE:
+  T1 — idle (closed WP-SIGNAL-MEAN-REVERSION-ZSCORE-V1,
+              WP-INFRA-UNIVERSE-CENTRALIZE)
+  T2 — idle (closed WP-INFRA-INTRADAY-FILTER,
+              WP-DATA-UNIVERSE-ASX200)
+  T3 — idle (closed WP-INFRA-SCHEMA-DRIFT-SCRIPT)
+  T4 — idle (closing WP-RECONCILE-SESSION-6-CLOSE)
+  T5 — held / spare; not activated this session
+
+IMMEDIATE QUEUE (SESSION 7):
+  Three natural candidates, ordered by information
+  yield:
+    1. WP-SIGNAL-MEAN-REVERSION-ZSCORE-V2 — re-run V1's
+       6-combo grid on the ASX 200 universe. Direct test
+       of universe-thesis tension; either MR shows life
+       on broader universe or family is decisively dead.
+       Either way, high-information result.
+    2. WP-SIGNAL-MOMENTUM-V1 — second untested family on
+       the ASX 200 universe. Different family +
+       different breadth simultaneously; higher variance
+       but potentially the first positive finding.
+    3. WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION —
+       cosmetic; land early to lock the concurrent-
+       tolerant assertion pattern before the next
+       parallel multi-WP block.
+  Recommended ordering: (3) as warm-up, then (1) as
+  primary signal-family test, then (2) if (1) is
+  decisive and time permits.

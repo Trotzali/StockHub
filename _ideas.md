@@ -68,14 +68,6 @@ WP-DB-DIRECT-SQL-ESCAPE-HATCH
   Banked because we may eventually want server-side aggregation or
   window functions for heavy backtests.
 
-WP-DATA-UNIVERSE-ASX200
-  Expand the hardcoded 10-ticker blue-chip list in
-  scripts/fetch_yfinance.py to the full ASX 200. Source TBD —
-  candidates: scrape ASX index composition page, use a maintained
-  list from a finance package (yfinance lacks index-membership
-  API), or pull from Alpha Vantage / Finnhub free tier. Decide
-  refresh cadence (quarterly index reconstitution).
-
 WP-DATA-STOCKS-METADATA-ENRICHMENT
   Populate the currently-NULL stocks columns (sector, industry,
   market_cap) via yfinance Ticker.info per ticker. Weekly refresh
@@ -92,16 +84,6 @@ WP-INFRA-SCHEDULER
   in scripts/logs/. Consider an exit-code-aware retry wrapper if
   silent failures bite.
 
-WP-INFRA-SCHEMA-DRIFT-SCRIPT
-  Formalize the V-walk done in session 2 (T2 read-only,
-  NO_DRIFT_DETECTED on 25/25 columns) into a committed script —
-  scripts/verify_schema.py — for repeatable audits. Pulls the
-  expected schema from migrations/001_initial_schema.sql,
-  introspects deployed schema via PostgREST OpenAPI (/rest/v1/
-  with Accept: application/openapi+json), diffs by column name +
-  PostgREST type. Exit 0 = NO_DRIFT_DETECTED, exit non-zero +
-  diff report on drift.
-
 WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
   Generalize the 3-attempt exponential backoff (1s/2s/4s
   delays) currently duplicated as fetch_with_retry() in
@@ -117,30 +99,6 @@ WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
   ENRICHMENT is the likely trigger) makes the duplication
   actively painful.
 
-WP-INFRA-INTRADAY-FILTER
-  scripts/fetch_yfinance.py and scripts/backfill_historical.py
-  currently have no volume>0 / "is this bar finalised?" filter.
-  Today's intraday bars get picked up by daily runs during market
-  hours (volume starts at 0 and accumulates through the session).
-  scripts/seed_xjo.py at bfaa817 applies the right pattern inline
-  (df = df[df['volume'] > 0]) and dropped 5 historical zero-volume
-  ^AXJO bars + would have dropped today's intraday bar if yfinance
-  had served one. Apply the same filter inline in both fetcher
-  scripts, OR extract a shared helper in src/data/yfinance_utils.py
-  (intraday_filter or finalised_bars_only). Trigger: next time the
-  daily fetcher runs during market hours or a stock's intraday bar
-  surfaces as a row in production prices.
-
-WP-INFRA-UNIVERSE-CENTRALIZE
-  TICKERS dict is duplicated across scripts/fetch_yfinance.py and
-  scripts/backfill_historical.py (now 11 entries each after ^AXJO
-  added in bfaa817). Two consumers managed manually so far; drift
-  is a real risk on next ticker addition. Consolidate into
-  src/data/universe.py with BLUE_CHIPS_ASX (10) + BENCHMARKS
-  (1: ^AXJO) lists, both consumed via import. Trigger: 3rd
-  consumer adds the same dict, OR WP-DATA-UNIVERSE-ASX200 fires
-  (which would inflate the duplication from 11 to 200+ entries).
-
 WP-DB-BENCHMARKS-TABLE
   ^AXJO sits in the stocks table as of bfaa817. The stocks table
   semantically holds tradeable equities; an index is a different
@@ -153,6 +111,60 @@ WP-DB-BENCHMARKS-TABLE
   ^GSPC + ^IXIC for US comparison) OR cosmetic mismatch starts
   causing actual confusion. Defer until then; the current state
   is honest and works.
+
+WP-INFRA-PRICES-ZEROVOL-CLEANUP
+  One-shot cleanup of the 7 existing volume=0 rows on blue chips
+  (ANZ.AX 2022-07-18/19/20; CSL.AX 2021-12-14/15; NAB.AX
+  2023-11-15; RIO.AX 2023-11-15). Daily fetcher's new filter
+  (fe9100e) prevents reintroduction. Material to backtest
+  correctness; small WP, ~15 min. Tiny priority.
+
+WP-INFRA-YFUTILS-PERTICKER-INGEST
+  Per-ticker fetch + reshape + volume<=0 filter + upsert pattern
+  is now inlined in 2 consumers (backfill_historical.py +
+  seed_asx200.py). Consolidate into src/data/yfinance_utils.py
+  when a 3rd consumer materialises. Low priority; pattern-
+  stabilisation play.
+
+WP-DATA-XYX-RECOVER
+  Investigate Yahoo ticker-mapping for Block, Inc.'s ASX listing.
+  Wikipedia constituent code is XYX but yfinance returns 404.
+  Stocks row exists; prices empty. Likely the listing trades on
+  Yahoo under a different symbol (historically SQ2.AX post
+  Square/Block rename). Material only if doing Block-specific
+  signal work; not blocking universe-level tests. Low priority.
+
+WP-INFRA-SCHEMA-DRIFT-V2
+  Extend scripts/verify_schema.py to cover defaults, indexes,
+  triggers, CHECK constraints, FK targets, numeric precision/
+  scale. v1 (4b9037b) is intentionally presence+format+required+
+  PK only; defer expansion until drift in those categories
+  surfaces. Low priority.
+
+WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION
+  Amend CLAUDE.md to document the concurrent-tolerant status
+  assertion pattern (per session 6 lesson; T2-intraday pragmatic,
+  T3 strict-halt, T1-centralise explicit-pathspec). Trivial WP,
+  1 file modification, 10-line addition. Fire early session 7
+  before next concurrent multi-WP block.
+
+═══════════════════════════════════════════════════════
+RETIRED (closed this session)
+═══════════════════════════════════════════════════════
+
+Closing-SHA trail for WPs that left the Banked section because
+they shipped or were superseded. Maintained from session 6 onward
+to preserve provenance over silent-delete.
+
+WP-DATA-UNIVERSE-ASX200             — closed 2146b34 (session 6)
+WP-INFRA-UNIVERSE-CENTRALIZE        — closed 1e724b2 (session 6)
+WP-INFRA-INTRADAY-FILTER            — closed fe9100e (session 6)
+WP-INFRA-SCHEMA-DRIFT-SCRIPT        — closed 4b9037b (session 6)
+WP-SIGNAL-MEAN-REVERSION-ZSCORE-V1  — closed bfbae14 (session 6,
+                                      REFUTED 6/6 negative test
+                                      alpha; never in Banked
+                                      section, retired direct from
+                                      in-flight session-6 work)
 
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
@@ -264,3 +276,42 @@ Process learnings (SESSION 5):
   filter / regime / portfolio context applied on top. Lesson:
   re-optimise per signal architecture; don't carry V2-winner
   parameters as defaults into V3-style WPs.
+
+Process learnings (SESSION 6):
+- Mean-reversion z-score with mean-touch exit (long entry when
+  z < -threshold, exit when z >= 0) refuted as alpha generator on
+  ASX blue chips 2022-2026. Pattern: high test Sharpe (0.582
+  winner) but decisively negative alpha because B&H is running
+  hot in the test slice. Family re-test on ASX 200 universe
+  banked.
+- Churn-cost mechanism is now established cross-family (validated
+  V3 + MR V1; promoted from V3-specific calibration to durable
+  design constraint). Applies to ANY multi-component strategy.
+  Check ex-ante: "entry count when component is on vs off?"
+- Bull-market test-window structurally flatters B&H over long-only
+  signals. 4/4 session-4-to-6 refutations share this shape.
+  Implication for future tests: report B&H Sharpe alongside signal
+  Sharpe; alpha is the gold metric, not Sharpe in isolation.
+- Universe-thesis tension: retail-noise-exploitation strategies
+  are structurally weakest on most-arbitraged segments. ASX blue
+  chips are exactly that segment. Broader-universe retests are
+  the next-most-informative control.
+- Engine signal_series protocol (held-position 0/1 with NaN warm-
+  up, slice-then-pass to engine) is the correct abstraction across
+  signal families. Reused across 4 WPs without modification.
+  Future signal families plug in identically.
+- PostgREST does not expose system schemas (information_schema).
+  For Supabase introspection, canonical path is GET /rest/v1/ with
+  Accept: application/openapi+json. Stays inside the "supabase-py
+  over HTTPS only" locked decision (no native PG driver, no RPC).
+- Wikipedia is the canonical source for ASX 200 constituents via
+  bs4 direct parse (no env mutation needed; bs4 is a yfinance
+  dep). Re-snapshot at quarterly index rebalances.
+- In concurrent multi-terminal sessions, status assertions should
+  use "MUST INCLUDE [files]; declared concurrent artifacts ALLOWED"
+  pattern. Strict "MUST show exactly" is for solo-terminal commits.
+  Validated by T2-intraday (pragmatic), T3 (halt-on-strict),
+  T1-centralise (explicit-pathspec mitigation).
+- .env Finnhub + Alpha Vantage keys are present-but-empty
+  placeholders. Stack-aspirational. Future WPs needing those
+  sources must provision or plan around the gap.
