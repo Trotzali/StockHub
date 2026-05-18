@@ -48,3 +48,55 @@ def regime_above_ma(df: pd.DataFrame,
     ma = df[close_col].rolling(window).mean()
     pos = (df[close_col] > ma).astype(float)
     return pos.where(ma.notna(), float("nan"))
+
+
+def mean_reversion_zscore_signal(df: pd.DataFrame,
+                                 window: int,
+                                 threshold: float,
+                                 close_col: str = "adj_close") -> pd.Series:
+    """Mean-reversion z-score signal (stateful, mean-touch exit).
+
+    Enter long when the close price is below the rolling mean by more
+    than `threshold` rolling standard deviations (z < -threshold).
+    Exit when the close reverts to or above the rolling mean (z >= 0).
+
+    Stateful: between an entry and the subsequent mean-touch exit, the
+    position is HELD at 1 regardless of intermediate z values. This is
+    the classic bounded-band trader semantic — once you're long, you
+    wait for the mean target, not for another entry signal. Differs
+    from the stateless ma_crossover_signal where each day's position
+    is a pure function of today's MAs.
+
+    Standard deviation uses ddof=0 (POPULATION stdev). This keeps the
+    z-score scale identical across grid sweeps over varying `window`
+    sizes; ddof=1 (sample stdev) would slightly inflate stdev on
+    smaller windows and shift threshold crossings. The choice is
+    locked at population to give the grid a consistent scale.
+
+    Warm-up rows (where the rolling mean / stdev are undefined — first
+    window-1 rows) return NaN. The engine treats first non-NaN as the
+    start of the evaluation window.
+
+    Returns:
+        Series of length len(df), float dtype. First window-1 rows are
+        NaN. Subsequent rows are 0.0 / 1.0 representing held-position
+        state per the engine's signal_series protocol.
+    """
+    closes = df[close_col]
+    sma = closes.rolling(window).mean()
+    stdev = closes.rolling(window).std(ddof=0)
+    z = (closes - sma) / stdev
+
+    position = pd.Series([float("nan")] * len(df), index=df.index, dtype=float)
+    prev_pos = 0
+    for t in range(window - 1, len(df)):
+        z_t = z.iloc[t]
+        if pd.notna(z_t) and z_t < -threshold:
+            position.iloc[t] = 1.0
+            prev_pos = 1
+        elif pd.notna(z_t) and z_t >= 0 and prev_pos == 1:
+            position.iloc[t] = 0.0
+            prev_pos = 0
+        else:
+            position.iloc[t] = float(prev_pos)
+    return position
