@@ -24,21 +24,7 @@ from supabase import create_client, Client
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.data.yfinance_utils import trade_date, df_to_records, upsert_prices
-
-# 10 ASX blue chips for MVP. Expand via WP-DATA-UNIVERSE-ASX200.
-TICKERS: dict[str, str] = {
-    "CBA.AX": "Commonwealth Bank of Australia",
-    "BHP.AX": "BHP Group Limited",
-    "RIO.AX": "Rio Tinto Limited",
-    "WBC.AX": "Westpac Banking Corporation",
-    "NAB.AX": "National Australia Bank",
-    "ANZ.AX": "ANZ Group Holdings",
-    "WES.AX": "Wesfarmers Limited",
-    "WOW.AX": "Woolworths Group",
-    "TLS.AX": "Telstra Group",
-    "CSL.AX": "CSL Limited",
-    "^AXJO":  "S&P/ASX 200 Index",
-}
+from src.data.universe import TICKERS
 
 FETCH_PERIOD = "7d"
 RETRY_DELAYS = (1, 2, 4)  # exponential backoff between attempts

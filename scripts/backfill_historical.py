@@ -24,22 +24,7 @@ from supabase import create_client, Client
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.data.yfinance_utils import df_to_records, upsert_prices
-
-# Same 10 ASX blue chips as scripts/fetch_yfinance.py.
-# TODO: WP-DATA-UNIVERSE-ASX200 will consolidate to a shared config.
-TICKERS: dict[str, str] = {
-    "CBA.AX": "Commonwealth Bank of Australia",
-    "BHP.AX": "BHP Group Limited",
-    "RIO.AX": "Rio Tinto Limited",
-    "WBC.AX": "Westpac Banking Corporation",
-    "NAB.AX": "National Australia Bank",
-    "ANZ.AX": "ANZ Group Holdings",
-    "WES.AX": "Wesfarmers Limited",
-    "WOW.AX": "Woolworths Group",
-    "TLS.AX": "Telstra Group",
-    "CSL.AX": "CSL Limited",
-    "^AXJO":  "S&P/ASX 200 Index",
-}
+from src.data.universe import TICKERS
 
 FETCH_PERIOD = "5y"
 RETRY_DELAYS = (1, 2, 4)
