@@ -105,6 +105,19 @@ Rules:
   by a `data/` pattern; recovered in fd8ba2e by
   anchoring to `/data/`. The check-ignore step catches
   the gap before push, not after.
+- Why step 2 has two modes:
+  - SOLO-TERMINAL (default): `git status -s` MUST show
+    EXACTLY the declared file list. Any other unstaged
+    path = halt and reconcile.
+  - CONCURRENT (declared in WP prompt GATE): status MUST
+    INCLUDE the declared list; other unstaged files are
+    permitted iff they are in-flight artifacts of
+    another terminal's WP. Discipline preserved via
+    explicit-pathspec `git add` (never `git add .`) plus
+    a strict step-5 `git diff --cached --name-only`
+    showing EXACTLY the declared list. Locked session 6
+    (4790939) after five concurrent terminal moves
+    exposed the gap.
 
 ## State files (source of truth)
 
