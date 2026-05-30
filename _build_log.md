@@ -399,3 +399,78 @@ fe9100e — 2026-05-19 — WP-INFRA-INTRADAY-FILTER
   Gates: 1e724b2.
 
   (Reconcile commits not logged per established convention.)
+
+═══════════════════════════════════════════════════════
+SESSION 7 — 2026-05-19 / 2026-05-23
+═══════════════════════════════════════════════════════
+
+dfe17de — 2026-05-22 — WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION
+  Amended CLAUDE.md "Commit discipline" Rules block (+13
+  lines) to encode the two-mode status-assertion pattern
+  locked at the session-6 reconcile (4790939). SOLO-TERMINAL
+  (default): git status -s MUST show EXACTLY the declared
+  file list. CONCURRENT (declared in WP GATE): status MUST
+  INCLUDE the declared list; other unstaged files tolerated
+  iff in-flight artifacts of another terminal's WP, guarded
+  by (a) explicit-pathspec git add and (b) step-5
+  git diff --cached --name-only showing EXACTLY the declared
+  list. Concurrency mode declared upfront in WP GATE;
+  absence of declaration = SOLO.
+
+  Spec-deviation note: T1 shipped without the orchestrator-
+  authorised parenthetical "(plus any whitelist-gated paths
+  per the rule above)" on the solo-mode bullet. Banked into
+  WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2 for fix.
+  Gates: 4790939.
+
+c823e20 — 2026-05-23 — WP-SIGNAL-MEAN-REVERSION-ZSCORE-V2
+  Re-run of V1 (bfbae14) spec verbatim on the ASX 200
+  universe filtered to mature listings -- universe is the
+  only variable changed from V1. Same signal function
+  (mean_reversion_zscore_signal, population stdev ddof=0,
+  mean-touch exit z >= 0), same engine, same 6-combo grid,
+  same 60/40 holdout at 2024-07-01 (train_mask <=,
+  inclusive), same long-only V1 constraint, same $10k/ticker,
+  same costs (0.1% brokerage/side + $0.01/share slippage),
+  same winner-selection (aggregate TRAIN Sharpe, tiebreak
+  avg train total return; test metrics reported as held-out
+  validation, never optimised over). New
+  scripts/backtest_mean_reversion_grid_asx200.py.
+
+  Universe filter: src.data.universe.ASX_200 (200) ->
+  survivors with >= 504 rows where trade_date <= 2024-07-01.
+  Result N=185. Excluded 15: 8 zero-row orphans (AAI, DNL,
+  GGP, L1G, RYM, SGH, VGN, XYX) + 7 partial-history (FRW 42,
+  CSC 59, NEM 169, ASK 232, RDX 253, LNW 271, LSF 394).
+
+  Headline: REFUTED. All 6 combos negative alpha vs B&H on
+  BOTH train and test; test-window alpha range -34.58% to
+  -40.13%. Winner (window=50, threshold=2.0, aggregate train
+  Sharpe 0.349): test Sharpe 0.269 vs B&H 0.467 (delta
+  -0.198), test alpha -35.89%, beats B&H on 57/185 (30.8%)
+  test tickers. Highest-train-Sharpe combo is the lowest-
+  entry combo (~6.4 entries/ticker train) -- a cash-drag
+  Sharpe artefact during trending markets, not edge.
+
+  V-walk: CBA.AX winner combo, first 3 entries, script z vs
+  manual arithmetic max delta 2.87e-13 (PASS criterion
+  <1e-8). Wall-clock 5.6 min vs 5.1 min estimate. Survivor
+  count exact match to Phase A (185 vs 185).
+
+  Family chapter closed cross-universe (narrow V1 bfbae14,
+  broad V2 c823e20). Engine + signals.py + universe.py +
+  yfinance_utils.py consumed unchanged. No env mutations;
+  supabase-py + stock certifi 2026.4.22 reached Supabase
+  with Norton TLS interception OFF (verified 2026-05-23
+  08:15).
+
+  Spec deviations logged in commit body: (1) .mr_v2_run.log
+  matched pre-existing .gitignore "*.log" rule so never
+  showed as untracked -- log captured on disk (10,482
+  bytes), verified, rm'd pre-push; safer than asserted. (2)
+  Long commit body required $TEMP/<unique>.txt -> mv to
+  .commit-msg.tmp pattern (bash heredoc parser limit). Both
+  banked into WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2.
+  Gates: dfe17de.
+
+  (Reconcile commits not logged per established convention.)

@@ -73,17 +73,50 @@ LOCKED DECISIONS
   PRESENT-BUT-EMPTY placeholders. Stack-aspirational, not
   provisioned. Future WPs needing either must provision or
   plan around the gap.
+- Mean-reversion z-score family REFUTED on both narrow (V1
+  bfbae14, 10 blue chips) and broad (V2 c823e20, 185 ASX 200
+  survivors) universes. Family chapter closed. Next signal work
+  must change SIGNAL spec OR LONG-ONLY constraint, not just
+  universe.
+- Concurrent-tolerant status assertion pattern locked in
+  CLAUDE.md (dfe17de). SOLO-TERMINAL strict-literal vs CONCURRENT
+  MUST-INCLUDE; mode declared upfront in WP prompt GATE; default
+  SOLO.
+- Norton AV TLS interception is the supabase-py SSL
+  CERTIFICATE_VERIFY_FAILED root cause on this Windows ARM64
+  machine. Fix is environmental — Norton Settings → Safe Web →
+  HTTPS scanning OFF. certifi pinning does NOT fix it. (Also
+  mirrored in ENVIRONMENT NOTES item 14.)
+- supabase-py + stock certifi 2026.4.22 reaches Supabase cleanly
+  with Norton SSL/TLS scanning disabled. No truststore, no SSL
+  bootstrap module, no env vars. Validated end-to-end (T1 probe
+  + c823e20 full-grid run).
+- Bull-market backdrop + long-only constraint is the dominant
+  explanatory variable for 5 consecutive signal-family
+  refutations (MA crossover V1/V2/V3, MR z-score V1, MR z-score
+  V2). Mean-reversion family closed cross-universe (narrow V1
+  bfbae14, broad V2 c823e20). Next signal-family test must vary
+  the signal mechanic or the long-only constraint, not just the
+  universe.
+- Cash-drag Sharpe artefact pattern: in trending markets, Sharpe
+  improving as entry count drops is dampened-vol-via-inaction,
+  not signal value. Diagnostic check: if train alpha is negative
+  across all combos, Sharpe ordering is artefactual.
 
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-(between WPs — SESSION 6 closed. Mean-reversion z-score family
-REFUTED (V1, bfbae14, 6/6 combos negative test alpha); defensive
-infrastructure shipped (intraday filter fe9100e, schema drift script
-4b9037b, centralised universe 1e724b2); universe expanded 20x to 200
-ASX 200 constituents + ^AXJO (2146b34). SESSION 7 opens with mean-
-reversion re-test on broader universe vs first momentum WP — see
-"Immediate queue — session 7" below.)
+(between WPs — SESSION 7 closed [reconcile late-landed in session 8,
+2026-05-24, after WP-META-SESSION7-CLOSE-AUDIT caught a missed Phase B
+authorization]. Mean-reversion z-score family closed cross-universe
+(V2 c823e20 REFUTED on 185-ticker ASX 200 survivor set; narrow V1
+bfbae14 + broad V2). CLAUDE.md amended (dfe17de) with the concurrent-
+tolerant status-assertion pattern. Norton AV HTTPS scanning found
+MITM-ing supabase-py SSL on this box; remediated off-terminal
+2026-05-23; environment restored. SESSION 8 opens with CLAUDEMD-
+COMMIT-CONVENTIONS-V2 + service-key rotation warm-ups, then momentum
+V1 as primary signal-family test — see "Immediate queue — session 8"
+below.)
 
 Closed in SESSION 1:
   WP-BOOTSTRAP-REPO-INIT              — 73b2c8d
@@ -152,7 +185,31 @@ Closed in SESSION 6:
                                                   Wikipedia parse; 189/190
                                                   new tickers in 218.8s;
                                                   XYX.AX 404 banked)
-  WP-RECONCILE-SESSION-6-CLOSE        — (see `git log -1 --oneline`)
+  WP-RECONCILE-SESSION-6-CLOSE        — 4790939
+
+Closed in SESSION 7 (2026-05-19 .. 2026-05-23; reconcile late-landed
+session 8, 2026-05-24):
+  WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION
+                                      — dfe17de  (T1, +13 lines CLAUDE.md
+                                                  Commit-discipline Rules
+                                                  block; SOLO vs CONCURRENT
+                                                  status-assertion modes)
+  WP-SIGNAL-MEAN-REVERSION-ZSCORE-V2  — c823e20  (T2, V1 spec re-run on
+                                                  185 ASX 200 survivors;
+                                                  REFUTED 6/6 negative test
+                                                  alpha; family closed
+                                                  cross-universe)
+  Investigated, unshipped (no commits):
+  WP-INFRA-CERTIFI-PIN                — CLOSED UNSHIPPED (T1; premise
+                                        refuted -- certifi 2025.11.12
+                                        failed identical SSL error;
+                                        rolled back to 2026.4.22)
+  WP-INFRA-SSL-TRUSTSTORE             — CLOSED UNSHIPPED (T1; Phase A
+                                        found Norton "Web/Mail Shield
+                                        Root" leaf cert = AV TLS MITM;
+                                        correct halt; superseded by
+                                        orchestrator-side Norton-off fix)
+  WP-RECONCILE-SESSION-7-CLOSE        — (see `git log -1 --oneline`)
 
 See _build_log.md for commit details.
 
@@ -178,105 +235,97 @@ Foundation (Phase 1, months 1-2):
 Foundation arc complete. MA crossover signal family fully
 characterised across three refutations (00e2141 V1 single, 8782a6a
 V2 grid, bfaa817 V3 regime-filtered). Mean-reversion z-score family
-refuted in V1 (bfbae14) on the 10-blue-chip universe; re-test on
-ASX 200 universe banked as session-7 candidate. Engine + signal +
-paginated-fetch helpers live in src/backtest/ + src/data/
+closed CROSS-UNIVERSE across two refutations (bfbae14 V1 narrow /
+10 blue chips, c823e20 V2 broad / 185 ASX 200 survivors). Engine +
+signal + paginated-fetch helpers live in src/backtest/ + src/data/
 yfinance_utils.py + src/data/universe.py (centralised universe per
-1e724b2).
+1e724b2). New this session: scripts/backtest_mean_reversion_grid_
+asx200.py (c823e20). CLAUDE.md amended (dfe17de) with the
+concurrent-tolerant status-assertion pattern (SOLO strict-literal vs
+CONCURRENT MUST-INCLUDE) in the Commit-discipline Rules block.
 
-Production state at session-6 close: 24 commits on master since
-inception; 201 stocks, 239,694 prices, 0 signals. Per-ticker
-coverage: 200 ASX 200 constituents + ^AXJO benchmark; row counts
-vary by listing date (mature listings ~1265 rows; IPOs post-2021
-have shorter histories; 5 named short-history tickers: CSC.AX 534,
-FRW.AX 124, L1G.AX 155, LNW.AX 747, RYM.AX 148). One orphan stock:
-XYX.AX has a stocks row but 0 prices (banked
-WP-DATA-XYX-RECOVER). ^AXJO sits in stocks table (cosmetic
-mismatch noted; refactor banked as WP-DB-BENCHMARKS-TABLE,
-unchanged from session 5).
+Production state at session-7 close: 26 commits on master since
+inception (+dfe17de +c823e20 over session-6's 24); 201 stocks,
+239,694 prices, 0 signals persisted (signals computed in-backtest,
+never written to DB). No data ingestion this session -- stocks /
+prices unchanged from session-6 close. Per-ticker coverage
+unchanged: 200 ASX 200 constituents + ^AXJO benchmark; row counts
+vary by listing date. One orphan stock: XYX.AX has a stocks row but
+0 prices (banked WP-DATA-XYX-RECOVER); session-7 MR V2 Phase A
+surfaced 7 further zero-row tickers (AAI, DNL, GGP, L1G, RYM, SGH,
+VGN) banked as WP-DATA-ASX200-ORPHANS-V2. ^AXJO sits in stocks table
+(cosmetic mismatch; refactor banked WP-DB-BENCHMARKS-TABLE).
+
+Environment: Norton AV HTTPS scanning was MITM-ing supabase-py SSL
+(leaf cert "Norton Web/Mail Shield Root"); disabled off-terminal
+2026-05-23, verified clean with stock certifi 2026.4.22. See
+ENVIRONMENT NOTES item 14. SUPABASE_SERVICE_ROLE_KEY was exposed to
+Norton in plaintext during the interception window -- rotation banked
+as WP-INFRA-ROTATE-SERVICE-KEY.
 
 UI shell remains gated on WP-UI-FRONTEND-STACK-ARM64-RESOLUTION.
 
-Banked WPs (session 6 outcomes):
+Banked WPs (session 6 outcomes, still open):
   WP-INFRA-PRICES-ZEROVOL-CLEANUP — one-shot cleanup of the 7 existing
                                     volume=0 rows on blue chips (ANZ.AX
                                     2022-07-18/19/20; CSL.AX 2021-12-14/
                                     15; NAB.AX 2023-11-15; RIO.AX
-                                    2023-11-15). Daily fetcher's new
-                                    filter (fe9100e) prevents
-                                    reintroduction. Material to backtest
-                                    correctness; small WP, ~15 min.
+                                    2023-11-15). Daily fetcher's filter
+                                    (fe9100e) prevents reintroduction.
                                     Tiny priority.
   WP-INFRA-YFUTILS-PERTICKER-INGEST
                                   — per-ticker fetch + reshape +
                                     volume<=0 filter + upsert pattern
-                                    now inlined in 2 consumers
-                                    (backfill_historical.py +
-                                    seed_asx200.py). Consolidate into
-                                    src/data/yfinance_utils.py when a
-                                    3rd consumer materialises. Low
-                                    priority; pattern-stabilisation play.
-  WP-DATA-XYX-RECOVER             — investigate Yahoo ticker-mapping for
-                                    Block, Inc.'s ASX listing. Wikipedia
-                                    constituent code is XYX but yfinance
-                                    returns 404. Stocks row exists;
-                                    prices empty. Likely the listing
-                                    trades on Yahoo under a different
-                                    symbol (historically SQ2.AX post
-                                    Square/Block rename). Material only
-                                    if doing Block-specific signal work;
-                                    not blocking universe-level tests.
-                                    Low priority.
-  WP-INFRA-SCHEMA-DRIFT-V2        — extend verify_schema.py to cover
-                                    defaults, indexes, triggers, CHECK
-                                    constraints, FK targets, numeric
-                                    precision/scale. v1 (4b9037b) is
-                                    intentionally presence+format+
-                                    required+PK only; defer expansion
-                                    until drift in those categories
-                                    surfaces. Low priority.
-  WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION
-                                  — amend CLAUDE.md to document the
-                                    concurrent-tolerant status assertion
-                                    pattern (per session 6 lesson;
-                                    T2-intraday pragmatic, T3 strict-
-                                    halt, T1-centralise explicit-
-                                    pathspec). Trivial WP, 1 file
-                                    modification, 10-line addition. Fire
-                                    early session 7 before next
-                                    concurrent multi-WP block.
+                                    inlined in 2 consumers; consolidate
+                                    when a 3rd materialises. Low priority.
+  WP-DATA-XYX-RECOVER             — Yahoo ticker-mapping for Block, Inc.
+                                    (XYX 404; likely SQ2.AX). Low priority.
+  WP-INFRA-SCHEMA-DRIFT-V2        — extend verify_schema.py to defaults,
+                                    indexes, triggers, CHECK, FK targets,
+                                    numeric precision/scale. Low priority.
 
-Immediate queue — session 7:
+Banked WPs (session 7 outcomes):
+  WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2
+                                  — amalgamate 3 process gaps into one
+                                    CLAUDE.md amendment: whitelist-gate
+                                    parenthetical fix on dfe17de's solo
+                                    bullet + *.log gitignore convention +
+                                    $TEMP/mv pattern for commit bodies
+                                    >~500 chars. ~25 lines. May fold in
+                                    SSL-LESSON. Session-8 warm-up.
+  WP-INFRA-CLAUDEMD-SSL-LESSON    — CLAUDE.md startup-check note for
+                                    AV-TLS-interception as a known
+                                    supabase-py SSL failure mode
+                                    (diagnostic + fix recipes).
+  WP-INFRA-ROTATE-SERVICE-KEY     — rotate SUPABASE_SERVICE_ROLE_KEY
+                                    post-Norton-MITM. ~10 min end-to-end.
+  WP-DATA-ASX200-ORPHANS-V2       — investigate 7 zero-row tickers (AAI,
+                                    DNL, GGP, L1G, RYM, SGH, VGN);
+                                    per-ticker Yahoo mapping. Low priority.
+  WP-SIGNAL-MOMENTUM-V1           — fresh signal family on broader ASX
+                                    200 universe (cross-sectional or
+                                    absolute lookback momentum). Highest
+                                    information yield for session 8.
+  WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1
+                                  — same MR family, long-only constraint
+                                    flipped; isolates constraint-axis from
+                                    family-axis. (Confirmed NOT previously
+                                    banked.)
 
-  Session 7 opens with three natural candidates, ordered by
-  information yield:
+Immediate queue — session 8:
 
-  1. WP-SIGNAL-MEAN-REVERSION-ZSCORE-V2 — re-run the V1 6-combo
-     grid on the ASX 200 universe. Same script structure (the
-     grid script imports TICKERS / BLUE_CHIPS_ASX from the
-     centralised universe — extending to ASX_200 is one line).
-     Engine + signal function unchanged. Direct test of the
-     universe-thesis tension: if MR shows life on broader
-     universe but died on blue chips, that's strong directional
-     evidence. If MR refutes again, family is more decisively
-     dead. Either way, high-information-content result.
+  - Option A (warm-up): WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2.
+  - Option B (hygiene): WP-INFRA-ROTATE-SERVICE-KEY.
+  - Option C (PRIMARY): WP-SIGNAL-MOMENTUM-V1 — design discussion in
+    chat before Phase A (signal definition, lookback window, skip
+    convention, rebalance frequency, long-only scope).
+  - Stretch: WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1 or
+    WP-DATA-ASX200-ORPHANS-V2.
 
-  2. WP-SIGNAL-MOMENTUM-V1 — try the second untested family
-     (cross-sectional momentum or absolute lookback return) on
-     the ASX 200 universe. Different family, different
-     mechanism, same universe — varies both the signal and the
-     breadth simultaneously. Higher variance result but
-     potentially the first positive finding.
-
-  3. WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION — cosmetic
-     but should land early session 7 before the next concurrent
-     multi-WP block to lock the assertion pattern documented
-     and consistent.
-
-  Recommended ordering: (3) as warm-up (tiny), then (1) as
-  primary signal-family test (highest information yield given
-  we have ground-truth on blue chips), then (2) if (1) is
-  decisive and time permits.
+  Recommended ordering: A + B as warm-ups (small; lock process +
+  hygiene), then C as primary signal-family test — first untested
+  family on the broad universe, high information yield given
+  mean-reversion and MA-crossover families are both now closed.
 
 Signal design (Phase 2, months 2-4):
   WP-SIGNAL-HYPOTHESIS-V1       — one clear hypothesis (leaning earnings surprise + RSI<40 + above 200MA)
@@ -296,13 +345,15 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-All 5 terminals idle post-session-6 close.
-T1 — idle (closed WP-SIGNAL-MEAN-REVERSION-ZSCORE-V1,
-            WP-INFRA-UNIVERSE-CENTRALIZE)
-T2 — idle (closed WP-INFRA-INTRADAY-FILTER,
-            WP-DATA-UNIVERSE-ASX200)
-T3 — idle (closed WP-INFRA-SCHEMA-DRIFT-SCRIPT)
-T4 — idle (closing WP-RECONCILE-SESSION-6-CLOSE)
+All 5 terminals idle post-session-7 close (reconcile late-landed
+session 8, 2026-05-24).
+T1 — idle (closed dfe17de WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-
+            ASSERTION; investigated-unshipped WP-INFRA-CERTIFI-PIN +
+            WP-INFRA-SSL-TRUSTSTORE; verified Norton-off env
+            2026-05-23 08:15)
+T2 — idle (closed c823e20 WP-SIGNAL-MEAN-REVERSION-ZSCORE-V2)
+T3 — idle (not activated this session)
+T4 — idle (closing WP-RECONCILE-SESSION-7-CLOSE)
 T5 — held / spare (not activated this session)
 
 ═══════════════════════════════════════════════════════
@@ -416,3 +467,18 @@ Permanent gotchas — bake into every CC prompt on this box.
     SESSION 2: T2's WP-INFRA-CLAUDE-MD over T1's hygiene push,
     and T2's V-walk over T1's fetcher push. Fast-forward only —
     if the pull would require a merge, STOP and report instead.
+
+14. Norton AV TLS interception (surfaced SESSION 7)
+    Norton SSL/TLS scanning toggle at Norton Settings → Safe Web →
+    HTTPS scanning is OFF as of 2026-05-23. Do NOT re-enable — it
+    MITM-terminates upstream TLS and re-signs every cert with
+    Norton's private root, which breaks supabase-py and every
+    certifi-using HTTPS library (CERTIFICATE_VERIFY_FAILED). Other
+    Norton protections remain ON. Diagnostic if supabase-py SSL
+    fails again: inspect the leaf cert issuer — "Norton Web/Mail
+    Shield Root" or any AV-product organization name means the AV
+    is intercepting; the fix is the OS-side toggle, NOT a code-side
+    certifi pin (pinning to certifi 2025.11.12 was tried and failed
+    identically). Security note: SUPABASE_SERVICE_ROLE_KEY was
+    visible to Norton in plaintext on every supabase-py call while
+    scanning was on — rotation banked as WP-INFRA-ROTATE-SERVICE-KEY.

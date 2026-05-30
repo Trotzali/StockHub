@@ -141,12 +141,74 @@ WP-INFRA-SCHEMA-DRIFT-V2
   PK only; defer expansion until drift in those categories
   surfaces. Low priority.
 
-WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION
-  Amend CLAUDE.md to document the concurrent-tolerant status
-  assertion pattern (per session 6 lesson; T2-intraday pragmatic,
-  T3 strict-halt, T1-centralise explicit-pathspec). Trivial WP,
-  1 file modification, 10-line addition. Fire early session 7
-  before next concurrent multi-WP block.
+WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2
+  Amalgamate three session-7 process gaps into one CLAUDE.md
+  amendment: (a) whitelist-gate parenthetical fix on dfe17de's
+  solo-mode bullet ("(plus any whitelist-gated paths per the rule
+  above)"), (b) *.log gitignore convention note (don't assert
+  untracked-listing for gitignored extensions), (c) $TEMP/<unique>
+  -> mv .commit-msg.tmp pattern for commit bodies >~500 chars where
+  the bash heredoc parser breaks. ~25 lines. May fold in
+  WP-INFRA-CLAUDEMD-SSL-LESSON. Fire as session-8 warm-up.
+
+WP-INFRA-CLAUDEMD-SSL-LESSON
+  Add a CLAUDE.md startup-check note documenting AV-TLS-interception
+  as a known supabase-py SSL failure mode. Diagnostic recipe (check
+  leaf cert issuer org for AV product names -- Norton, Avast, ESET,
+  Kaspersky; if a certifi-pin to an older version also fails, suspect
+  MITM). Fix recipe (disable AV HTTPS/SSL scanning; do NOT use
+  truststore as a workaround -- it silently accepts the MITM). May
+  fold into WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2.
+
+WP-INFRA-ROTATE-SERVICE-KEY
+  Rotate SUPABASE_SERVICE_ROLE_KEY post-Norton-MITM discovery. The
+  key was visible to Norton in plaintext on every supabase-py call
+  for an unknown duration (as long as Norton SSL scanning was on).
+  No concrete evidence of compromise; Norton is reputable. Hygiene
+  rotation is the textbook response to "secret briefly visible to a
+  third party". ~10 min: Supabase dashboard action + .env update +
+  1-row verification. Fire early session 8.
+
+WP-DATA-ASX200-ORPHANS-V2
+  Investigate the 7 zero-row tickers beyond XYX.AX surfaced in MR V2
+  Phase A: AAI.AX (Alcoa), DNL.AX (Dyno Nobel), GGP.AX (Greatland),
+  L1G.AX (L1 Group), RYM.AX (Ryman), SGH.AX (SGH), VGN.AX (Virgin
+  Australia). Session-6 seed (2146b34) reported 189/190 with only
+  XYX flagged; reality is 8/190 zero-row. Either silent seed failure
+  or post-seed regression. Per-ticker Yahoo-mapping check; recover
+  where possible. Low priority; not blocking universe tests at 185
+  survivors.
+
+WP-INFRA-REQUIREMENTS-PIN
+  Author a proper requirements.txt with pinned versions (separate
+  runtime / dev manifests if useful). Project currently has no
+  pinned dependency manifest; reproducibility relies on local
+  interpreter state + the `--only-binary :all:` pip policy. Treated
+  as carry-forward banked in the Session 8 OPEN handover but absent
+  from _ideas.md -- orchestrator-side miss surfaced and corrected in
+  this reconcile. Low priority while project remains solo +
+  single-env.
+
+WP-SIGNAL-MOMENTUM-V1
+  Fresh signal family on the broader ASX 200 universe -- cross-
+  sectional momentum or absolute lookback return. First untested
+  family now that MA-crossover and mean-reversion are both closed.
+  Tests whether the structural refutation shape is "long-only timing
+  fails in bull markets" (momentum would also refute) or
+  "mean-reversion specifically fails in trending markets" (momentum
+  could work, since trend-following IS the alignment). Highest
+  information yield for session 8. Settle design in chat before
+  Phase A: cross-sectional ranking vs absolute lookback; 3/6/12-month
+  window set; skip-1 convention; rebalance frequency; long-only V1.
+
+WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1
+  Re-run the just-refuted MR z-score family with the long-only
+  constraint flipped to long-short. Isolates the constraint-axis from
+  the family-axis: if long-short MR shows life where long-only died,
+  the killer was the constraint not the signal. (Confirmed NOT
+  previously banked -- the "long-short banked since session 3" note
+  did not materialise in _ideas.md or _project_state.md.) Stretch
+  candidate for session 8.
 
 ═══════════════════════════════════════════════════════
 RETIRED (closed this session)
@@ -165,6 +227,21 @@ WP-SIGNAL-MEAN-REVERSION-ZSCORE-V1  — closed bfbae14 (session 6,
                                       alpha; never in Banked
                                       section, retired direct from
                                       in-flight session-6 work)
+WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION
+                                    — closed dfe17de (session 7)
+WP-SIGNAL-MEAN-REVERSION-ZSCORE-V2  — closed c823e20 (session 7,
+                                      REFUTED on 185 ASX 200
+                                      survivors; family closed
+                                      cross-universe)
+WP-INFRA-CERTIFI-PIN                — CLOSED UNSHIPPED (session 7;
+                                      premise refuted -- certifi pin
+                                      to 2025.11.12 failed identical
+                                      SSL error; no commit)
+WP-INFRA-SSL-TRUSTSTORE             — CLOSED UNSHIPPED (session 7;
+                                      Phase A found Norton AV TLS
+                                      MITM; correct halt; superseded
+                                      by orchestrator-side Norton-off
+                                      fix; no commit)
 
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
@@ -315,3 +392,53 @@ Process learnings (SESSION 6):
 - .env Finnhub + Alpha Vantage keys are present-but-empty
   placeholders. Stack-aspirational. Future WPs needing those
   sources must provision or plan around the gap.
+
+Process learnings (SESSION 7):
+- Diagnostic-first discipline pays off. Norton-MITM discovery
+  only happened because WP-INFRA-SSL-TRUSTSTORE Phase A was
+  designed to capture the actual cert chain before installing
+  truststore. Pattern: when a problem resists multiple
+  hypotheses, switch from execution-first to diagnostic-first.
+- Corroborated diagnoses can both be wrong. T2 and T1
+  independently attributed supabase-py SSL failure to certifi.
+  Both were wrong. Corroboration is not validation;
+  first-principles diagnosis is.
+- Spec deviations must halt-and-report. T1's silent dfe17de
+  deviation (omitting orchestrator-authorized parenthetical) is
+  the calibration. Orchestrator approval IS the spec; silent
+  re-litigation of preferred original position is the discipline
+  gap.
+- .gitignore inspection in Phase A. When a WP will produce
+  untracked artifacts (run logs, build outputs), Phase A should
+  check .gitignore for relevant patterns before specifying status
+  assertions. T2 c823e20 surfaced this.
+- Sharpe-improves-as-entries-drop diagnostic. In a trending bull
+  market, if Sharpe improves as combo entry count drops, suspect
+  cash-drag artefact. Always cross-check against train alpha -- if
+  negative across the grid, the Sharpe ordering is artefactual
+  not edge.
+- Mean-reversion family closed cross-universe. Same family on a
+  third universe slice is unlikely to invert the structural
+  shape. Vary the SIGNAL or the CONSTRAINT next, not just the
+  universe.
+- Norton MITM lesson logged. Future Claude / future Troy: if
+  supabase-py SSL fails again, check leaf cert issuer org name
+  for AV product names (Norton, Avast, ESET, Kaspersky) BEFORE
+  pinning anything. If issuer looks AV-injected, the fix is
+  OS-side, not code-side.
+- Reconcile Phase B authorization gap (session 7 -> session 8).
+  Phase A landed clean; Phase B never fired; orchestrator drafted
+  session-N+1 OPEN as if reconcile shipped. Future protocol: any
+  session-open handover must include a `git log --oneline -3`
+  check that the SHIPPED list's reconcile SHA actually exists on
+  master before treating the session as closed. Caught
+  retrospectively via WP-META-SESSION7-CLOSE-AUDIT.
+- Banked-state drift detected (session 7 retrospective).
+  WP-INFRA-REQUIREMENTS-PIN was listed as carry-forward banked in
+  the Session 8 OPEN handover but absent from _ideas.md BANKED.
+  Orchestrator-side miss; corrected in this reconcile via Edit
+  3a. Future protocol: any "carry-forward banked" list in a
+  session-open handover should be grep-verified against _ideas.md
+  before treating as source-of-truth. Same family of drift as the
+  Phase-B-authorization gap above -- both are orchestrator-side
+  inter-session state-drift modes catching up retroactively.
