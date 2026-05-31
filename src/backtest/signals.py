@@ -100,3 +100,45 @@ def mean_reversion_zscore_signal(df: pd.DataFrame,
         else:
             position.iloc[t] = float(prev_pos)
     return position
+
+
+def momentum_absolute_lookback_signal(df: pd.DataFrame,
+                                      N: int,
+                                      skip: int = 21,
+                                      close_col: str = "adj_close") -> pd.Series:
+    """Absolute lookback momentum signal (Jegadeesh-Titman skip-1-month).
+
+    Per-ticker binary signal. At each trade_date t:
+        p_then = close[t - skip - N]
+        p_skip = close[t - skip]
+        lookback_return = (p_skip / p_then) - 1
+        signal[t] = 1  if lookback_return >  0  (strict)
+        signal[t] = 0  if lookback_return <= 0
+        signal[t] = NaN for the first (skip + N) trade days (warm-up)
+                    or if either p_then or p_skip is NaN.
+
+    The (strict >) is locked; zero or negative lookback yields 0, not 1.
+
+    The skip-21 (one month) is the classic Jegadeesh-Titman convention
+    designed to avoid the well-documented short-term mean-reversion
+    overlap into momentum measurement. Default-bound so the signal is
+    a single-grid-axis function of N.
+
+    Stateless: each day's signal is a pure function of two prices
+    (skip and skip+N trade days ago). Consecutive 1s mean the
+    momentum condition continues to hold; the engine's held-position
+    protocol treats them as a single continuous position.
+
+    Returns:
+        Series of length len(df), float dtype. First (skip + N) rows
+        are NaN. Subsequent rows are 0.0 / 1.0 per the engine's
+        signal_series protocol.
+
+    Spec source: WP-SIGNAL-MOMENTUM-V1.
+    """
+    closes = df[close_col]
+    p_then = closes.shift(skip + N)
+    p_skip = closes.shift(skip)
+    lookback_return = (p_skip / p_then) - 1.0
+    signal = (lookback_return > 0).astype(float)
+    return signal.where(lookback_return.notna(), float("nan"))
