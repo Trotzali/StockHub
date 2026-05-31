@@ -102,20 +102,70 @@ LOCKED DECISIONS
   improving as entry count drops is dampened-vol-via-inaction,
   not signal value. Diagnostic check: if train alpha is negative
   across all combos, Sharpe ordering is artefactual.
+- Momentum absolute-lookback per-ticker timing family REFUTED
+  long-only on broad ASX 200 (80f9993, 3/3 combos negative test
+  alpha; winner N=252 test alpha -13.50%). This is the WEAKEST
+  momentum formulation; cross-sectional ranked variant
+  (Jegadeesh-Titman canonical, banked WP-SIGNAL-MOMENTUM-CROSS-
+  SECTIONAL-V1) remains untested. Refutation does NOT close the
+  cross-sectional door.
+- 6 consecutive long-only signal-family refutations across 3
+  distinct mechanic families (MA crossover V1/V2/V3, MR z-score
+  V1/V2, momentum absolute-lookback V1). The constant is the
+  long-only constraint, not the signal mechanic. Long-only
+  constraint = prime suspect. Next test must vary the constraint
+  axis (long-short) before retesting more signal mechanics.
+  Prerequisite: WP-INFRA-ENGINE-SHORTSIDE.
+- Cash-drag Sharpe artefact promoted from MR-specific finding to
+  universal long-only-in-trending-market property. Validated
+  cross-family across MR V2 (c823e20) and Momentum V1 (80f9993):
+  in both, the lowest-entry-count combo wins on test Sharpe via
+  dampened-vol-from-inaction while train alpha is uniformly
+  negative across the grid.
+- Supabase legacy HS256-signed JWT in-place rotation EOL'd. The
+  current SUPABASE_SERVICE_ROLE_KEY is a legacy HS256 JWT;
+  Supabase no longer offers same-key rotation. Forward path is
+  JWT-signing-key migration (generate new signing key, swap,
+  retire old). Banked WP-INFRA-SUPABASE-NEW-KEY-MIGRATION
+  supersedes WP-INFRA-ROTATE-SERVICE-KEY (S7-banked, S8-closed-
+  deferred). Also mirrored in ENVIRONMENT NOTES item 15.
+- $TEMP/<unique>.txt -> mv .commit-msg.tmp long-body commit
+  pattern validated under its own documentation: 8ba9416 used the
+  pattern to commit the pattern's spec (~2200 char body, above
+  the ~500 char heredoc memory-bound). Convention is recursive-
+  safe. .commit-msg.tmp gitignore-add banked as
+  WP-INFRA-GITIGNORE-COMMIT-MSG-TMP to eliminate the post-stage-
+  mv ordering constraint.
+- CLAUDE.md "Why <X>" bullet ordering in the Commit-discipline
+  Rules block is thematic, not numerical. New bullets append by
+  theme proximity, not by numbered step. Established by 8ba9416
+  (added "Why .gitignore-matching artefacts hide" and "Why long
+  commit bodies use $TEMP/mv" thematic bullets without
+  renumbering the existing "Why step N exists" ones).
+- Carry-forward banked lists in session-open handovers are NOT
+  source-of-truth. _ideas.md BANKED is. Future session-open
+  handovers must `grep`-verify carry-forward claims against
+  _ideas.md before treating them as authoritative. (Promoted
+  from S7 calibration; same family as the Phase-B-authorization-
+  gap protocol fix. Mirrored as calibration note in _ideas.md.)
 
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-(between WPs — SESSION 7 closed [reconcile late-landed in session 8,
-2026-05-24, after WP-META-SESSION7-CLOSE-AUDIT caught a missed Phase B
-authorization]. Mean-reversion z-score family closed cross-universe
-(V2 c823e20 REFUTED on 185-ticker ASX 200 survivor set; narrow V1
-bfbae14 + broad V2). CLAUDE.md amended (dfe17de) with the concurrent-
-tolerant status-assertion pattern. Norton AV HTTPS scanning found
-MITM-ing supabase-py SSL on this box; remediated off-terminal
-2026-05-23; environment restored. SESSION 8 opens with CLAUDEMD-
-COMMIT-CONVENTIONS-V2 + service-key rotation warm-ups, then momentum
-V1 as primary signal-family test — see "Immediate queue — session 8"
+(between WPs — SESSION 8 closed. Momentum absolute-lookback family
+REFUTED long-only on the broad ASX 200 universe (80f9993, 3/3 combos
+negative test alpha; winner N=252 test alpha -13.50%). Refutation
+count now 6 consecutive long-only signal-family refutations across 3
+distinct mechanic families — long-only constraint = prime suspect.
+CLAUDE.md +39 lines (8ba9416) across 4 amendments codifying session-7
+process gaps (whitelist parenthetical + *.log gitignore convention +
+$TEMP/mv long-body pattern + AV-TLS-interception diagnostic).
+WP-INFRA-ROTATE-SERVICE-KEY closed-deferred; superseded by
+WP-INFRA-SUPABASE-NEW-KEY-MIGRATION after Supabase legacy HS256
+in-place rotation found EOL'd. SESSION 9 opens with the constraint-
+axis pivot: WP-INFRA-ENGINE-SHORTSIDE refactor as prerequisite, then
+first long-short signal test (momentum-LS vs MR-LS to be settled in
+session-9 strategy discussion) — see "Immediate queue — session 9"
 below.)
 
 Closed in SESSION 1:
@@ -188,7 +238,7 @@ Closed in SESSION 6:
   WP-RECONCILE-SESSION-6-CLOSE        — 4790939
 
 Closed in SESSION 7 (2026-05-19 .. 2026-05-23; reconcile late-landed
-session 8, 2026-05-24):
+session 8, 2026-05-31):
   WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-ASSERTION
                                       — dfe17de  (T1, +13 lines CLAUDE.md
                                                   Commit-discipline Rules
@@ -209,7 +259,38 @@ session 8, 2026-05-24):
                                         Root" leaf cert = AV TLS MITM;
                                         correct halt; superseded by
                                         orchestrator-side Norton-off fix)
-  WP-RECONCILE-SESSION-7-CLOSE        — (see `git log -1 --oneline`)
+  WP-RECONCILE-SESSION-7-CLOSE        — a63cb38  (T4, resumed; landed
+                                                  2026-05-31 after
+                                                  WP-META-SESSION7-CLOSE-
+                                                  AUDIT caught missed
+                                                  Phase B)
+
+Closed in SESSION 8 (2026-05-31 .. 2026-06-01):
+  WP-SIGNAL-MOMENTUM-V1               — 80f9993  (T2, per-ticker absolute
+                                                  lookback 3-combo grid
+                                                  REFUTED on 185 ASX 200
+                                                  survivors; winner N=252
+                                                  test alpha -13.50%;
+                                                  cross-sectional variant
+                                                  banked)
+  WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2
+                                      — 8ba9416  (T1, +39 lines CLAUDE.md
+                                                  across 4 amendments
+                                                  codifying S7 process
+                                                  gaps; dogfooded
+                                                  amendment c; folds in
+                                                  CLAUDEMD-SSL-LESSON as
+                                                  amendment d)
+  Investigated, unshipped (no commits):
+  WP-META-SESSION7-CLOSE-AUDIT        — CLOSED UNSHIPPED (T4, diagnostic
+                                        only; surfaced missed S7 Phase B
+                                        authorization; triggered a63cb38
+                                        resumed reconcile)
+  WP-INFRA-ROTATE-SERVICE-KEY         — CLOSED DEFERRED (Supabase legacy
+                                        HS256 in-place rotation EOL'd;
+                                        superseded by WP-INFRA-SUPABASE-
+                                        NEW-KEY-MIGRATION)
+  WP-RECONCILE-SESSION-8-CLOSE        — (see `git log -1 --oneline`)
 
 See _build_log.md for commit details.
 
@@ -236,32 +317,43 @@ Foundation arc complete. MA crossover signal family fully
 characterised across three refutations (00e2141 V1 single, 8782a6a
 V2 grid, bfaa817 V3 regime-filtered). Mean-reversion z-score family
 closed CROSS-UNIVERSE across two refutations (bfbae14 V1 narrow /
-10 blue chips, c823e20 V2 broad / 185 ASX 200 survivors). Engine +
+10 blue chips, c823e20 V2 broad / 185 ASX 200 survivors). Momentum
+absolute-lookback per-ticker timing family closed at one refutation
+(80f9993 V1 on 185 ASX 200 survivors; cross-sectional variant still
+untested, banked WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1). Engine +
 signal + paginated-fetch helpers live in src/backtest/ + src/data/
 yfinance_utils.py + src/data/universe.py (centralised universe per
-1e724b2). New this session: scripts/backtest_mean_reversion_grid_
-asx200.py (c823e20). CLAUDE.md amended (dfe17de) with the
-concurrent-tolerant status-assertion pattern (SOLO strict-literal vs
-CONCURRENT MUST-INCLUDE) in the Commit-discipline Rules block.
+1e724b2). New this session: scripts/backtest_momentum_grid_asx200.py
+(80f9993). CLAUDE.md +39 lines (8ba9416) across 4 amendments
+codifying S7 process gaps (whitelist parenthetical + *.log gitignore
+convention + $TEMP/mv long-body pattern + AV-TLS-interception
+diagnostic).
 
-Production state at session-7 close: 26 commits on master since
-inception (+dfe17de +c823e20 over session-6's 24); 201 stocks,
-239,694 prices, 0 signals persisted (signals computed in-backtest,
-never written to DB). No data ingestion this session -- stocks /
-prices unchanged from session-6 close. Per-ticker coverage
-unchanged: 200 ASX 200 constituents + ^AXJO benchmark; row counts
-vary by listing date. One orphan stock: XYX.AX has a stocks row but
-0 prices (banked WP-DATA-XYX-RECOVER); session-7 MR V2 Phase A
-surfaced 7 further zero-row tickers (AAI, DNL, GGP, L1G, RYM, SGH,
-VGN) banked as WP-DATA-ASX200-ORPHANS-V2. ^AXJO sits in stocks table
-(cosmetic mismatch; refactor banked WP-DB-BENCHMARKS-TABLE).
+Production state at session-8 close: 30 commits on master since
+inception (+a63cb38 +80f9993 +8ba9416 over session-7's 26, +this
+reconcile); 201 stocks, 239,694 prices, 0 signals persisted (signals
+computed in-backtest, never written to DB). No data ingestion this
+session -- stocks / prices unchanged from session-6 close (the last
+data-ingesting session). Per-ticker coverage unchanged: 200 ASX 200
+constituents + ^AXJO benchmark. Orphan/short-history tickers
+unchanged from session-7 close (XYX banked WP-DATA-XYX-RECOVER; 7
+zero-row tickers banked WP-DATA-ASX200-ORPHANS-V2). ^AXJO sits in
+stocks table (cosmetic mismatch; refactor banked
+WP-DB-BENCHMARKS-TABLE).
 
-Environment: Norton AV HTTPS scanning was MITM-ing supabase-py SSL
-(leaf cert "Norton Web/Mail Shield Root"); disabled off-terminal
-2026-05-23, verified clean with stock certifi 2026.4.22. See
-ENVIRONMENT NOTES item 14. SUPABASE_SERVICE_ROLE_KEY was exposed to
-Norton in plaintext during the interception window -- rotation banked
-as WP-INFRA-ROTATE-SERVICE-KEY.
+Signal-family scorecard (post-S8): 3 mechanic families tested
+long-only on ASX 200 (MA crossover, MR z-score, momentum absolute-
+lookback); 6 consecutive refutations; common constant = long-only
+constraint, not signal mechanic. Long-only suspected as the
+killer. Next arc: constraint-axis pivot — WP-INFRA-ENGINE-SHORTSIDE
+as enabling refactor, then first long-short signal test (momentum-LS
+or MR-LS — to be settled in session-9 strategy discussion).
+
+Environment: Norton AV HTTPS scanning OFF (S7), verified clean
+across all S8 commits. Supabase legacy HS256-signed JWT in-place
+rotation discovered EOL'd during ROTATE-SERVICE-KEY attempt;
+deferred and superseded by WP-INFRA-SUPABASE-NEW-KEY-MIGRATION (new
+key generation + swap). See ENVIRONMENT NOTES items 14-15.
 
 UI shell remains gated on WP-UI-FRONTEND-STACK-ARM64-RESOLUTION.
 
@@ -284,48 +376,82 @@ Banked WPs (session 6 outcomes, still open):
                                     indexes, triggers, CHECK, FK targets,
                                     numeric precision/scale. Low priority.
 
-Banked WPs (session 7 outcomes):
-  WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2
-                                  — amalgamate 3 process gaps into one
-                                    CLAUDE.md amendment: whitelist-gate
-                                    parenthetical fix on dfe17de's solo
-                                    bullet + *.log gitignore convention +
-                                    $TEMP/mv pattern for commit bodies
-                                    >~500 chars. ~25 lines. May fold in
-                                    SSL-LESSON. Session-8 warm-up.
-  WP-INFRA-CLAUDEMD-SSL-LESSON    — CLAUDE.md startup-check note for
-                                    AV-TLS-interception as a known
-                                    supabase-py SSL failure mode
-                                    (diagnostic + fix recipes).
-  WP-INFRA-ROTATE-SERVICE-KEY     — rotate SUPABASE_SERVICE_ROLE_KEY
-                                    post-Norton-MITM. ~10 min end-to-end.
+Banked WPs (session 7 outcomes, still open):
   WP-DATA-ASX200-ORPHANS-V2       — investigate 7 zero-row tickers (AAI,
                                     DNL, GGP, L1G, RYM, SGH, VGN);
                                     per-ticker Yahoo mapping. Low priority.
-  WP-SIGNAL-MOMENTUM-V1           — fresh signal family on broader ASX
-                                    200 universe (cross-sectional or
-                                    absolute lookback momentum). Highest
-                                    information yield for session 8.
+  WP-INFRA-REQUIREMENTS-PIN       — proper requirements.txt with pinned
+                                    versions. Low priority while project
+                                    remains solo + single-env.
   WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1
                                   — same MR family, long-only constraint
                                     flipped; isolates constraint-axis from
-                                    family-axis. (Confirmed NOT previously
-                                    banked.)
+                                    family-axis. Gated on
+                                    WP-INFRA-ENGINE-SHORTSIDE.
 
-Immediate queue — session 8:
+Banked WPs (session 8 outcomes):
+  WP-INFRA-GITIGNORE-COMMIT-MSG-TMP
+                                  — add .commit-msg.tmp to .gitignore.
+                                    Eliminates the post-stage-mv ordering
+                                    constraint documented in CLAUDE.md
+                                    (Why long commit bodies use $TEMP/mv).
+                                    Trivial WP; .gitignore edit + verify
+                                    on next reconcile.
+  WP-INFRA-SUPABASE-NEW-KEY-MIGRATION
+                                  — supersedes WP-INFRA-ROTATE-SERVICE-
+                                    KEY. Generate new Supabase JWT
+                                    signing key, swap in .env, verify
+                                    supabase-py reach, retire old key.
+                                    Driven by Supabase legacy-JWT
+                                    in-place rotation EOL (S8 finding).
+  WP-INFRA-ENGINE-SHORTSIDE       — extend src/backtest/engine.py from
+                                    long-only to long-short. Prerequisite
+                                    for any -LONGSHORT signal WP.
+                                    Position series becomes {-1, 0, +1};
+                                    PnL math gains short-side; brokerage
+                                    + slippage applies both sides; cash
+                                    accounting splits gross-long + gross-
+                                    short + net. Sizeable WP. Session-9
+                                    prerequisite for the constraint-axis
+                                    pivot.
+  WP-SIGNAL-MOMENTUM-LONGSHORT-V1 — same momentum spec as V1 (absolute
+                                    lookback, N in {63,126,252}, skip=21)
+                                    but constraint flipped to long-short.
+                                    Per-ticker, not cross-sectional.
+                                    Gated on WP-INFRA-ENGINE-SHORTSIDE.
+  WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1
+                                  — explicitly banked in 80f9993 commit
+                                    body. Cross-sectional ranked-momentum
+                                    portfolio (top-decile-by-12mo-return
+                                    holding equal-weight, rebalanced
+                                    monthly), backtested as one portfolio
+                                    rather than 185 per-ticker timing
+                                    signals. Jegadeesh-Titman canonical
+                                    formulation. Independent of
+                                    WP-SIGNAL-MOMENTUM-LONGSHORT-V1.
 
-  - Option A (warm-up): WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2.
-  - Option B (hygiene): WP-INFRA-ROTATE-SERVICE-KEY.
-  - Option C (PRIMARY): WP-SIGNAL-MOMENTUM-V1 — design discussion in
-    chat before Phase A (signal definition, lookback window, skip
-    convention, rebalance frequency, long-only scope).
-  - Stretch: WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1 or
-    WP-DATA-ASX200-ORPHANS-V2.
+Immediate queue — session 9:
 
-  Recommended ordering: A + B as warm-ups (small; lock process +
-  hygiene), then C as primary signal-family test — first untested
-  family on the broad universe, high information yield given
-  mean-reversion and MA-crossover families are both now closed.
+  - Reconcile (this WP) -- mandatory first action, landing now.
+  - WP-INFRA-GITIGNORE-COMMIT-MSG-TMP -- optional T1 warm-up;
+    eliminates the post-stage-mv ordering constraint for all
+    future long-body commits.
+  - WP-INFRA-ENGINE-SHORTSIDE -- agreed prerequisite for the
+    constraint-axis pivot. Engine refactor: position series
+    {-1, 0, +1}, two-sided PnL, brokerage + slippage both sides,
+    gross-long + gross-short + net cash accounting. The now-
+    locked next move; sizeable WP, must complete before any
+    long-short signal test fires.
+  - First long-short signal test (WP-SIGNAL-MOMENTUM-LONGSHORT-V1
+    vs WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1) -- TO BE SETTLED
+    IN SESSION-9 STRATEGY DISCUSSION. Both gated on
+    WP-INFRA-ENGINE-SHORTSIDE. No primary marked; orchestrator
+    decides based on the long-only-constraint-vs-signal-mechanic
+    question framing.
+  - WP-INFRA-SUPABASE-NEW-KEY-MIGRATION -- hygiene closeout;
+    rotate the post-Norton-MITM-exposed service-role key via the
+    new JWT-signing-key migration path (Supabase legacy in-place
+    rotation EOL'd).
 
 Signal design (Phase 2, months 2-4):
   WP-SIGNAL-HYPOTHESIS-V1       — one clear hypothesis (leaning earnings surprise + RSI<40 + above 200MA)
@@ -345,15 +471,16 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-All 5 terminals idle post-session-7 close (reconcile late-landed
-session 8, 2026-05-24).
-T1 — idle (closed dfe17de WP-INFRA-CLAUDEMD-CONCURRENT-STATUS-
-            ASSERTION; investigated-unshipped WP-INFRA-CERTIFI-PIN +
-            WP-INFRA-SSL-TRUSTSTORE; verified Norton-off env
-            2026-05-23 08:15)
-T2 — idle (closed c823e20 WP-SIGNAL-MEAN-REVERSION-ZSCORE-V2)
+All 5 terminals idle post-session-8 close.
+T1 — idle (closed 8ba9416 WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2;
+            dogfooded $TEMP/mv long-body pattern under its own
+            documentation)
+T2 — idle (closed 80f9993 WP-SIGNAL-MOMENTUM-V1; per-ticker absolute
+            lookback REFUTED on 185 ASX 200 survivors)
 T3 — idle (not activated this session)
-T4 — idle (closing WP-RECONCILE-SESSION-7-CLOSE)
+T4 — idle (closed WP-META-SESSION7-CLOSE-AUDIT diagnostic; closed
+            a63cb38 WP-RECONCILE-SESSION-7-CLOSE resumed; closing
+            WP-RECONCILE-SESSION-8-CLOSE)
 T5 — held / spare (not activated this session)
 
 ═══════════════════════════════════════════════════════
@@ -481,4 +608,22 @@ Permanent gotchas — bake into every CC prompt on this box.
     certifi pin (pinning to certifi 2025.11.12 was tried and failed
     identically). Security note: SUPABASE_SERVICE_ROLE_KEY was
     visible to Norton in plaintext on every supabase-py call while
-    scanning was on — rotation banked as WP-INFRA-ROTATE-SERVICE-KEY.
+    scanning was on — rotation banked as WP-INFRA-SUPABASE-NEW-KEY-
+    MIGRATION (supersedes the S7-banked WP-INFRA-ROTATE-SERVICE-KEY
+    after Supabase legacy in-place rotation found EOL'd; see item
+    15 below). Norton-off status verified clean across all session-8
+    commits (a63cb38 / 80f9993 / 8ba9416).
+
+15. Supabase JWT-signing-key auto-rotation (surfaced SESSION 8)
+    Supabase legacy HS256-signed JWT API keys (the format currently
+    in .env for SUPABASE_SERVICE_ROLE_KEY and SUPABASE_ANON_KEY) no
+    longer support in-place rotation — the dashboard's "rotate this
+    key" flow is EOL'd. Forward path is JWT-signing-key migration:
+    generate new signing key in Supabase dashboard, deploy new key
+    to .env, verify supabase-py reach with 1-row probe, retire old
+    key. Banked WP-INFRA-SUPABASE-NEW-KEY-MIGRATION. The S7-banked
+    WP-INFRA-ROTATE-SERVICE-KEY is superseded (CLOSED DEFERRED in
+    S8 after the in-place flow was found EOL'd mid-attempt).
+    Implication: future Supabase key rotations require new-key-
+    migration provisioning effort, not the trivial dashboard click
+    assumed at S7 banking time.

@@ -474,3 +474,134 @@ c823e20 — 2026-05-23 — WP-SIGNAL-MEAN-REVERSION-ZSCORE-V2
   Gates: dfe17de.
 
   (Reconcile commits not logged per established convention.)
+
+═══════════════════════════════════════════════════════
+SESSION 8 — 2026-05-31 / 2026-06-01
+═══════════════════════════════════════════════════════
+
+a63cb38 — 2026-05-31 — WP-RECONCILE-SESSION-7-CLOSE (T4, resumed)
+  Late-landed session-7 reconcile. Original Phase A landed
+  2026-05-23 in session-7 chat but Phase B was never
+  authorised; HEAD sat at c823e20 with all four state files
+  at session-6-close levels until WP-META-SESSION7-CLOSE-
+  AUDIT (T4, session-8 opener, no commit) caught the gap.
+  Resumed reconcile refreshed the 4 state files to session-
+  7-close baseline. Surfaced two orchestrator-side state-
+  drift modes: Phase-B-authorization gap (the primary
+  reason for the late landing) and banked-state drift
+  (WP-INFRA-REQUIREMENTS-PIN missing from _ideas.md despite
+  being listed as carry-forward in the session-8 OPEN
+  handover). Both calibrations locked in _ideas.md NOTES/
+  CALIBRATION + _timeline.md SESSION 7 PROCESS LEARNINGS.
+  Gates: 4790939.
+
+80f9993 — 2026-05-31 — WP-SIGNAL-MOMENTUM-V1 (T2)
+  Per-ticker absolute lookback momentum, Jegadeesh-Titman
+  skip-1-month convention, 3-combo grid (N in {63, 126,
+  252}, skip=21, threshold=0 strict), 60/40 train/test
+  holdout at 2024-07-01, same 185-survivor ASX 200 universe
+  as MR V2 (c823e20). Same engine, same long-only, same
+  $10k/ticker, same costs. New
+  scripts/backtest_momentum_grid_asx200.py.
+
+  Signal spec: lookback_return = (close[t-skip] /
+  close[t-skip-N]) - 1; signal=1 if return >0 strict, else
+  0; NaN warm-up for first (skip + N) trade days. Stateless
+  per-day; held-position semantics via engine
+  (consecutive 1s = continuous hold).
+
+  Headline: REFUTED. All 3 combos negative test alpha vs
+  B&H (range -13.50% to -23.83%). Winner (N=252, aggregate
+  train Sharpe +0.168 -- only combo with positive train
+  Sharpe): test Sharpe 0.289 vs B&H 0.467 (delta -0.178),
+  test alpha -13.50%, beats B&H on 50/185 (27.0%) test
+  tickers. Shorter lookbacks (N=63, N=126) have negative
+  TRAIN Sharpe (-0.127, -0.117) -- decisively worse on
+  train than the winner.
+
+  V-walk: CBA.AX winner combo, first 3 train-window 0->1
+  transitions, script lookback_return vs manual closes
+  arithmetic max delta 0.00e+00 (PASS criterion <1e-8).
+  Signal arithmetic exact across two independent code
+  paths.
+
+  Critical confound acknowledged: V1 tests the WEAKEST
+  momentum formulation -- per-ticker binary timing,
+  unranked, unnormalised. Refutation does NOT close the
+  cross-sectional door. Banked WP-SIGNAL-MOMENTUM-CROSS-
+  SECTIONAL-V1 (Jegadeesh-Titman canonical: top-decile-by-
+  12mo-return holding equal-weight, backtested as one
+  portfolio not 185 timing signals). Also banked
+  WP-SIGNAL-MOMENTUM-LONGSHORT-V1 (same per-ticker spec,
+  constraint flipped) gated on WP-INFRA-ENGINE-SHORTSIDE.
+
+  Session-cumulative refutation count: 6 consecutive long-
+  only signal-family refutations across 3 distinct
+  mechanic families (MA crossover V1/V2/V3 + MR z-score
+  V1/V2 + momentum absolute-lookback V1). Long-only
+  constraint = prime suspect. Engine + signals.py +
+  universe.py + yfinance_utils.py consumed unchanged.
+  Gates: a63cb38.
+
+8ba9416 — 2026-06-01 — WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2 (T1)
+  Four CLAUDE.md amendments folding session-7 process
+  learnings into the working-model document (+39 lines,
+  178 -> 217). All Rules-block or Environment-section
+  additions; no existing rule modified semantically.
+
+  (a) Solo-mode strict-literal parenthetical: dfe17de's
+  SOLO-TERMINAL bullet asserted git status -s MUST show
+  EXACTLY the declared file list; the pre-existing
+  whitelist-gate rule (e.g. _timeline.md when WP isn't a
+  reconcile) was a silent exception the wording
+  contradicted. T1 silently shipped dfe17de without the
+  orchestrator-authorised parenthetical "(plus any
+  whitelist-gated paths per the rule above)"; this
+  amendment lands it. +1 line.
+
+  (b) *.log gitignore convention: surfaced c823e20.
+  Artefacts matching existing gitignore patterns
+  (.mr_v2_run.log matching .gitignore:32 *.log) are
+  silently absent from git status -s. Safe but
+  non-obvious. New "Why <X>" thematic bullet in Commit-
+  discipline Rules block. +8 lines.
+
+  (c) $TEMP/<unique>.txt -> mv .commit-msg.tmp pattern for
+  long commit bodies: surfaced c823e20, reused a63cb38 +
+  80f9993. Bash heredocs in Bash tool memory-bound at
+  ~500 chars; bodies over that truncate. Pattern: write
+  body to $TEMP outside repo, AFTER pre-stage status
+  assertion + git add + diff --cached, mv to
+  .commit-msg.tmp, commit -F + rm. .commit-msg.tmp is NOT
+  currently gitignored so mv MUST land post-stage
+  (banked WP-INFRA-GITIGNORE-COMMIT-MSG-TMP to eliminate
+  the ordering constraint). +15 lines.
+
+  (d) AV TLS interception as supabase-py SSL failure mode:
+  surfaced WP-INFRA-SSL-TRUSTSTORE Phase A (session 7,
+  2026-05-19, no commit); resolved off-terminal 2026-05-23
+  by disabling Norton SSL scanning. New Environment-section
+  item 9: diagnostic (leaf cert issuer reading "Norton
+  Web/Mail Shield Root" or similar AV-product org name
+  indicates interception), fix (OS-side AV toggle),
+  explicit anti-fixes (don't pin certifi; don't install
+  truststore -- exposes SUPABASE_SERVICE_ROLE_KEY plaintext
+  to AV). Folds in banked WP-INFRA-CLAUDEMD-SSL-LESSON.
+  +15 lines.
+
+  Dogfooded amendment (c) in this commit: body ~2200 chars
+  (above the heredoc memory-bound); written to
+  $TEMP/claudemd_v2_body.txt outside the repo so the
+  working tree stayed at exactly ` M CLAUDE.md` during the
+  pre-stage SOLO strict-literal assertion; then mv to
+  .commit-msg.tmp AFTER staged-set verification, commit -F,
+  rm. Convention validates itself under its own
+  documentation.
+
+  Banks: WP-INFRA-GITIGNORE-COMMIT-MSG-TMP (add
+  .commit-msg.tmp to .gitignore; eliminates post-stage-mv
+  ordering constraint).
+  Gates: dfe17de (a baseline), c823e20 (b + c surfacing),
+  a63cb38 (c reuse), 80f9993 (c reuse).
+
+  (Reconcile commits not logged per established convention.)
