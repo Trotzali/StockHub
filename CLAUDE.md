@@ -56,6 +56,20 @@ Shell: PowerShell 5.1 on Windows 11 ARM64 (Snapdragon).
    exit `UnicodeEncodeError` crash on `→` in
    WP-SIGNAL-MA-CROSSOVER-V1 Phase A; full Phase B output
    ran clean under ASCII-only discipline.
+9. **AV TLS interception as supabase-py SSL failure.**
+   If supabase-py reports `[SSL: CERTIFICATE_VERIFY_
+   FAILED]`, inspect the leaf cert's issuer before any
+   fix attempt. AV-product issuer org names (Norton,
+   Avast, ESET, Kaspersky, McAfee, Bitdefender, etc.)
+   indicate TLS interception: the AV re-signs every
+   cert with its private root, breaking certifi's
+   validation. Fix: OS-side toggle (Norton: Settings
+   -> Safe Web -> HTTPS scanning OFF). Do NOT pin
+   certifi (tried WP-INFRA-CERTIFI-PIN session 7, no
+   commit; same error across 2025.11.12 and 2026.4.22).
+   Do NOT install `truststore` -- it silently accepts
+   the MITM and exposes `SUPABASE_SERVICE_ROLE_KEY` to
+   the AV. Surfaced + resolved session 7 (2026-05-23).
 
 ## Rule 0 — investigate before executing
 
@@ -105,9 +119,18 @@ Rules:
   by a `data/` pattern; recovered in fd8ba2e by
   anchoring to `/data/`. The check-ignore step catches
   the gap before push, not after.
+- Why .gitignore-matching artefacts hide from status:
+  files matching `*.log` and similar gitignore patterns
+  (`.mr_v2_run.log` swallowed by `.gitignore:32 *.log`,
+  session 7 c823e20) never appear in `git status -s`.
+  Phase A must `git check-ignore -v <expected-artefacts>`
+  upfront when a WP produces files that may match an
+  existing pattern; strict-literal status assertions
+  silently pass even when these artefacts are on disk.
 - Why step 2 has two modes:
   - SOLO-TERMINAL (default): `git status -s` MUST show
-    EXACTLY the declared file list. Any other unstaged
+    EXACTLY the declared file list (plus any whitelist-
+    gated paths per the rule above). Any other unstaged
     path = halt and reconcile.
   - CONCURRENT (declared in WP prompt GATE): status MUST
     INCLUDE the declared list; other unstaged files are
@@ -118,6 +141,21 @@ Rules:
     showing EXACTLY the declared list. Locked session 6
     (4790939) after five concurrent terminal moves
     exposed the gap.
+- Why long commit bodies use $TEMP/mv: bash heredocs in
+  Claude Code's Bash tool parser memory-bound at ~500
+  characters; bodies over that truncate. Workaround
+  proven across c823e20 / a63cb38 / 80f9993:
+    1. Write body to `$TEMP/<unique>.txt` (Write tool,
+       not heredoc).
+    2. AFTER pre-stage `git status -s` + `git add` +
+       `git diff --cached --name-only`, `mv` the temp
+       file to `.commit-msg.tmp` in the repo root.
+    3. `git commit -F .commit-msg.tmp`, then `rm`.
+  Critical ordering: `.commit-msg.tmp` is NOT gitignored,
+  so the mv MUST land AFTER the strict-literal SOLO
+  status assertion — otherwise it appears as `??` and
+  breaks the assertion. Banked: add `.commit-msg.tmp`
+  to .gitignore so this ordering constraint disappears.
 
 ## State files (source of truth)
 
