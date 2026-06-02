@@ -30,3 +30,4 @@ secrets.toml
 .DS_Store
 Thumbs.db
 *.log
+/.commit-msg.tmp

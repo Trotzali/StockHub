@@ -151,11 +151,13 @@ Rules:
        `git diff --cached --name-only`, `mv` the temp
        file to `.commit-msg.tmp` in the repo root.
     3. `git commit -F .commit-msg.tmp`, then `rm`.
-  Critical ordering: `.commit-msg.tmp` is NOT gitignored,
-  so the mv MUST land AFTER the strict-literal SOLO
-  status assertion — otherwise it appears as `??` and
-  breaks the assertion. Banked: add `.commit-msg.tmp`
-  to .gitignore so this ordering constraint disappears.
+  Original ordering constraint (amendment c ship time):
+  `.commit-msg.tmp` was NOT gitignored, so the mv had to
+  land AFTER the strict-literal SOLO status assertion —
+  otherwise it appeared as `??` and broke the assertion.
+  Relaxed by WP-INFRA-GITIGNORE-COMMIT-MSG-TMP:
+  `.commit-msg.tmp` is now gitignored, so mv may land at
+  any point in the chain.
 
 ## State files (source of truth)
 
