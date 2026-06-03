@@ -148,25 +148,75 @@ LOCKED DECISIONS
   _ideas.md before treating them as authoritative. (Promoted
   from S7 calibration; same family as the Phase-B-authorization-
   gap protocol fix. Mirrored as calibration note in _ideas.md.)
+- Long-short engine built + regression-clean; spec FROZEN at
+  3cd4d0b. Ternary {NaN, -1, 0, +1} stateful held-position;
+  cash-based sizing sign-flipped on short leg; symmetric costs
+  (0.1% brokerage + $0.01 slippage both legs every entry/exit);
+  pure-drag borrow charged daily on abs short notional, entry-
+  inclusive / exit-exclusive day-counting, default annualized
+  rate 0.0 (tunable per ticker); reverse-MTM at exit (drag IS
+  the daily charge); reports BOTH gross-of-borrow and net-of-
+  borrow metrics. Long-only callers regression-clean (aggregate
+  delta vs baseline = 0; byte-identical CSV outputs across MA
+  crossover V1/V2/V3, MR z-score V1/V2, momentum V1).
+- Borrow tiering (src/backtest/borrow_tiering.py): median daily
+  $-volume terciles via qcut → annualized 1% top / 4% mid / 8%
+  bottom liquidity. Full-sample classification (structural cost
+  assumption, not return leakage). Paginated fetch (PostgREST
+  1000-row cap workaround applies; this is the second consumer
+  of fetch_prices_full's pagination idiom after the V2 grid
+  caller).
+- MR family CLOSED under per-ticker absolute timing formulation:
+  long-only refuted (c823e20, test alpha -35.89%) AND long-short
+  refuted WORSE (cc2e4c6, test net alpha -81.16%). Further MR
+  work must change SIGNAL STRUCTURE (cross-sectional or regime-
+  conditional, banked WP-SIGNAL-MR-CROSSSECTIONAL-V1 +
+  WP-SIGNAL-MR-REGIME-CONDITIONAL), not re-run a per-ticker
+  formulation.
+- Lifting the long-only constraint did NOT rescue MR -- it HURT
+  it. Long-only was the LESS BAD configuration (-35.89% vs
+  -81.16% test alpha). The short leg's trend-fighting in the
+  bull-market test window is the binding problem, not the
+  constraint itself. Net-vs-gross borrow gap ~3.6 pts is dwarfed
+  by the -77.55% gross loss -- borrow drag is real but small;
+  the short leg lost money fighting the trend, not paying
+  borrow. Constraint-axis thesis remains OPEN for MOMENTUM
+  (where short leg trend-aligns rather than trend-fights);
+  long-short momentum is now the cleaner test of the long-only-
+  constraint-vs-signal-mechanic question.
+- Concurrent-push fix: after `git commit` run
+  `git fetch origin master`; if `origin/master` == your commit's
+  parent push directly (clean FF); if origin advanced HALT and
+  let the orchestrator sequence the rebase. Do NOT
+  `git pull --rebase` on a shared dirty tree; do NOT autostash
+  (disturbs other terminals' in-flight files). Banked CLAUDE.md
+  amendment WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT.
+- All self-fetches from Supabase must paginate (PostgREST 1000-
+  row cap applies beyond fetch_prices_full). Affects any new
+  consumer reading > 1000 rows from prices or any future high-
+  row-count table; reuse the existing pagination helper rather
+  than reimplementing.
 
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-(between WPs — SESSION 8 closed. Momentum absolute-lookback family
-REFUTED long-only on the broad ASX 200 universe (80f9993, 3/3 combos
-negative test alpha; winner N=252 test alpha -13.50%). Refutation
-count now 6 consecutive long-only signal-family refutations across 3
-distinct mechanic families — long-only constraint = prime suspect.
-CLAUDE.md +39 lines (8ba9416) across 4 amendments codifying session-7
-process gaps (whitelist parenthetical + *.log gitignore convention +
-$TEMP/mv long-body pattern + AV-TLS-interception diagnostic).
-WP-INFRA-ROTATE-SERVICE-KEY closed-deferred; superseded by
-WP-INFRA-SUPABASE-NEW-KEY-MIGRATION after Supabase legacy HS256
-in-place rotation found EOL'd. SESSION 9 opens with the constraint-
-axis pivot: WP-INFRA-ENGINE-SHORTSIDE refactor as prerequisite, then
-first long-short signal test (momentum-LS vs MR-LS to be settled in
-session-9 strategy discussion) — see "Immediate queue — session 9"
-below.)
+(between WPs — SESSION 9 closed. Long-short engine built (3cd4d0b,
+ternary {NaN,-1,0,+1} + symmetric costs + pure-drag borrow) and spec
+FROZEN; regression-clean across all 6 prior long-only callers (delta
+0). MR z-score family CLOSED under per-ticker absolute timing
+formulation: long-short refuted DECISIVELY WORSE than long-only
+(cc2e4c6, test net alpha -81.16% vs c823e20 long-only -35.89%) --
+the short leg lost fighting the trend, not paying borrow (net-vs-
+gross gap ~3.6 pts). KEY REFRAME: lifting the long-only constraint
+HURT MR; constraint-axis thesis remains OPEN for momentum (short
+leg trend-aligns rather than trend-fights). Infrastructure: borrow
+tiering (median-ADV terciles 1/4/8 pct annualised, full-sample);
+requirements.txt + requirements.lock split (cfc0e06); .commit-msg.tmp
+gitignored (85da176, relaxes mv-after-stage ordering). Refutation
+tally now 7 (6 long-only + 1 long-short). SESSION 10 opens with
+WP-SIGNAL-MOMENTUM-LONGSHORT-V1 as primary -- the cleaner test of
+the long-only-constraint hypothesis on a signal where the short leg
+trend-aligns. See "Immediate queue — session 10" below.)
 
 Closed in SESSION 1:
   WP-BOOTSTRAP-REPO-INIT              — 73b2c8d
@@ -290,7 +340,33 @@ Closed in SESSION 8 (2026-05-31 .. 2026-06-01):
                                         HS256 in-place rotation EOL'd;
                                         superseded by WP-INFRA-SUPABASE-
                                         NEW-KEY-MIGRATION)
-  WP-RECONCILE-SESSION-8-CLOSE        — (see `git log -1 --oneline`)
+  WP-RECONCILE-SESSION-8-CLOSE        — 60d4181
+
+Closed in SESSION 9 (2026-06-03):
+  WP-INFRA-GITIGNORE-COMMIT-MSG-TMP   — 85da176  (T1, anchored
+                                                  /.commit-msg.tmp in
+                                                  .gitignore; relaxes
+                                                  mv-after-stage ordering
+                                                  from 8ba9416 amend c)
+  WP-INFRA-REQUIREMENTS-PIN           — cfc0e06  (T3, split to 6-pin
+                                                  requirements.txt +
+                                                  requirements.lock with
+                                                  ARM64 transitive set;
+                                                  bs4 made explicit)
+  WP-INFRA-ENGINE-SHORTSIDE           — 3cd4d0b  (T2, long-short
+                                                  extension with pure-drag
+                                                  borrow; ternary
+                                                  {NaN,-1,0,+1}; symmetric
+                                                  costs; regression-clean
+                                                  delta 0; engine FROZEN)
+  WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1
+                                      — cc2e4c6  (T2, MR family closed
+                                                  cross-constraint;
+                                                  REFUTED WORSE than long-
+                                                  only -- test net alpha
+                                                  -81.16% vs -35.89%;
+                                                  short leg trend-fights)
+  WP-RECONCILE-SESSION-9-CLOSE        — (see `git log -1 --oneline`)
 
 See _build_log.md for commit details.
 
@@ -316,44 +392,59 @@ Foundation (Phase 1, months 1-2):
 Foundation arc complete. MA crossover signal family fully
 characterised across three refutations (00e2141 V1 single, 8782a6a
 V2 grid, bfaa817 V3 regime-filtered). Mean-reversion z-score family
-closed CROSS-UNIVERSE across two refutations (bfbae14 V1 narrow /
-10 blue chips, c823e20 V2 broad / 185 ASX 200 survivors). Momentum
+closed CROSS-UNIVERSE AND CROSS-CONSTRAINT across three refutations
+(bfbae14 V1 narrow long-only, c823e20 V2 broad long-only, cc2e4c6
+V1 broad long-short -- LS made it WORSE not better). Momentum
 absolute-lookback per-ticker timing family closed at one refutation
-(80f9993 V1 on 185 ASX 200 survivors; cross-sectional variant still
-untested, banked WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1). Engine +
-signal + paginated-fetch helpers live in src/backtest/ + src/data/
-yfinance_utils.py + src/data/universe.py (centralised universe per
-1e724b2). New this session: scripts/backtest_momentum_grid_asx200.py
-(80f9993). CLAUDE.md +39 lines (8ba9416) across 4 amendments
-codifying S7 process gaps (whitelist parenthetical + *.log gitignore
-convention + $TEMP/mv long-body pattern + AV-TLS-interception
-diagnostic).
+long-only (80f9993; cross-sectional variant still untested, banked
+WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1; long-short variant now the
+primary next test, banked WP-SIGNAL-MOMENTUM-LONGSHORT-V1).
 
-Production state at session-8 close: 30 commits on master since
-inception (+a63cb38 +80f9993 +8ba9416 over session-7's 26, +this
-reconcile); 201 stocks, 239,694 prices, 0 signals persisted (signals
-computed in-backtest, never written to DB). No data ingestion this
-session -- stocks / prices unchanged from session-6 close (the last
-data-ingesting session). Per-ticker coverage unchanged: 200 ASX 200
-constituents + ^AXJO benchmark. Orphan/short-history tickers
-unchanged from session-7 close (XYX banked WP-DATA-XYX-RECOVER; 7
-zero-row tickers banked WP-DATA-ASX200-ORPHANS-V2). ^AXJO sits in
-stocks table (cosmetic mismatch; refactor banked
-WP-DB-BENCHMARKS-TABLE).
+Engine: FROZEN at 3cd4d0b. Long-short capable; regression-clean
+across all 6 prior long-only callers (aggregate delta 0; byte-
+identical CSV outputs). Ternary {NaN,-1,0,+1} stateful held-
+position; symmetric costs (0.1% brokerage + $0.01/share slippage
+both legs every entry/exit); pure-drag borrow charged daily on abs
+short notional (default annualised 0.0; tunable per ticker via
+borrow tiering). signals.py: ma_crossover, mean_reversion_zscore,
+momentum_absolute_lookback, mean_reversion_zscore_longshort. New
+this session: src/backtest/borrow_tiering.py (median-ADV-tercile
+1/4/8 pct annualised; full-sample classification); requirements.txt
+(6 top-level pins, bs4 made explicit) + requirements.lock (full
+ARM64 transitive set, cfc0e06).
 
-Signal-family scorecard (post-S8): 3 mechanic families tested
-long-only on ASX 200 (MA crossover, MR z-score, momentum absolute-
-lookback); 6 consecutive refutations; common constant = long-only
-constraint, not signal mechanic. Long-only suspected as the
-killer. Next arc: constraint-axis pivot — WP-INFRA-ENGINE-SHORTSIDE
-as enabling refactor, then first long-short signal test (momentum-LS
-or MR-LS — to be settled in session-9 strategy discussion).
+Production state at session-9 close: 36 commits on master (35
+through cc2e4c6 + this reconcile; supersedes the handover's drifted
+34/30 figures -- git-authoritative). 201 stocks, 239,694 prices,
+0 signals persisted (signals computed in-backtest, never written to
+DB). No data ingestion this session -- stocks / prices unchanged
+from session-6 close (the last data-ingesting session). Per-ticker
+coverage unchanged: 200 ASX 200 constituents + ^AXJO benchmark.
+Orphan/short-history tickers unchanged (XYX banked
+WP-DATA-XYX-RECOVER; 7 zero-row tickers banked
+WP-DATA-ASX200-ORPHANS-V2). ^AXJO sits in stocks table (cosmetic
+mismatch; refactor banked WP-DB-BENCHMARKS-TABLE).
+
+Signal-family scorecard (post-S9): refutation tally 7 -- 6 long-only
+(MA crossover V1/V2/V3, MR z-score V1/V2, momentum absolute-lookback
+V1) + 1 long-short (MR z-score LS V1). KEY REFRAME: the long-only
+constraint is NOT the universal killer it appeared after 6
+long-only refutations. For MR, long-only was the LESS BAD
+configuration (-35.89% vs -81.16% test alpha) -- the short leg
+trend-fights in a bull market. Constraint-axis thesis remains OPEN
+for momentum (short leg trend-aligns rather than trend-fights);
+long-short momentum is the cleaner test of the long-only-vs-signal-
+mechanic question. Banked structural-MR pivots
+(WP-SIGNAL-MR-CROSSSECTIONAL-V1 long-bottom/short-top decile-z
+market-neutral; WP-SIGNAL-MR-REGIME-CONDITIONAL gate L/S on ^AXJO
+200-DMA) as where MR edge could plausibly still live.
 
 Environment: Norton AV HTTPS scanning OFF (S7), verified clean
-across all S8 commits. Supabase legacy HS256-signed JWT in-place
-rotation discovered EOL'd during ROTATE-SERVICE-KEY attempt;
-deferred and superseded by WP-INFRA-SUPABASE-NEW-KEY-MIGRATION (new
-key generation + swap). See ENVIRONMENT NOTES items 14-15.
+across all S8+S9 commits. Supabase legacy HS256-signed JWT in-place
+rotation EOL'd (S8 finding); WP-INFRA-SUPABASE-NEW-KEY-MIGRATION
+still open. .commit-msg.tmp now gitignored (85da176); long-body
+commit pattern simplified (write directly to .commit-msg.tmp; no
+$TEMP/mv ordering constraint). See ENVIRONMENT NOTES items 14-15.
 
 UI shell remains gated on WP-UI-FRONTEND-STACK-ARM64-RESOLUTION.
 
@@ -380,23 +471,8 @@ Banked WPs (session 7 outcomes, still open):
   WP-DATA-ASX200-ORPHANS-V2       — investigate 7 zero-row tickers (AAI,
                                     DNL, GGP, L1G, RYM, SGH, VGN);
                                     per-ticker Yahoo mapping. Low priority.
-  WP-INFRA-REQUIREMENTS-PIN       — proper requirements.txt with pinned
-                                    versions. Low priority while project
-                                    remains solo + single-env.
-  WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1
-                                  — same MR family, long-only constraint
-                                    flipped; isolates constraint-axis from
-                                    family-axis. Gated on
-                                    WP-INFRA-ENGINE-SHORTSIDE.
 
-Banked WPs (session 8 outcomes):
-  WP-INFRA-GITIGNORE-COMMIT-MSG-TMP
-                                  — add .commit-msg.tmp to .gitignore.
-                                    Eliminates the post-stage-mv ordering
-                                    constraint documented in CLAUDE.md
-                                    (Why long commit bodies use $TEMP/mv).
-                                    Trivial WP; .gitignore edit + verify
-                                    on next reconcile.
+Banked WPs (session 8 outcomes, still open):
   WP-INFRA-SUPABASE-NEW-KEY-MIGRATION
                                   — supersedes WP-INFRA-ROTATE-SERVICE-
                                     KEY. Generate new Supabase JWT
@@ -404,54 +480,75 @@ Banked WPs (session 8 outcomes):
                                     supabase-py reach, retire old key.
                                     Driven by Supabase legacy-JWT
                                     in-place rotation EOL (S8 finding).
-  WP-INFRA-ENGINE-SHORTSIDE       — extend src/backtest/engine.py from
-                                    long-only to long-short. Prerequisite
-                                    for any -LONGSHORT signal WP.
-                                    Position series becomes {-1, 0, +1};
-                                    PnL math gains short-side; brokerage
-                                    + slippage applies both sides; cash
-                                    accounting splits gross-long + gross-
-                                    short + net. Sizeable WP. Session-9
-                                    prerequisite for the constraint-axis
-                                    pivot.
   WP-SIGNAL-MOMENTUM-LONGSHORT-V1 — same momentum spec as V1 (absolute
                                     lookback, N in {63,126,252}, skip=21)
-                                    but constraint flipped to long-short.
-                                    Per-ticker, not cross-sectional.
-                                    Gated on WP-INFRA-ENGINE-SHORTSIDE.
+                                    but constraint flipped to long-short
+                                    via the frozen engine + borrow
+                                    tiering. PROMOTED to primary next
+                                    signal WP for session 10 (cleaner
+                                    test of long-only-constraint
+                                    hypothesis on a signal where the
+                                    short leg trend-aligns).
   WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1
                                   — explicitly banked in 80f9993 commit
                                     body. Cross-sectional ranked-momentum
                                     portfolio (top-decile-by-12mo-return
                                     holding equal-weight, rebalanced
-                                    monthly), backtested as one portfolio
-                                    rather than 185 per-ticker timing
-                                    signals. Jegadeesh-Titman canonical
+                                    monthly). Jegadeesh-Titman canonical
                                     formulation. Independent of
                                     WP-SIGNAL-MOMENTUM-LONGSHORT-V1.
 
-Immediate queue — session 9:
+Banked WPs (session 9 outcomes):
+  WP-SIGNAL-MR-CROSSSECTIONAL-V1  — long bottom-decile-z / short top-
+                                    decile-z daily; market-neutral.
+                                    Needs ranking/portfolio plumbing
+                                    (cross-sectional rank precomputation,
+                                    portfolio-level rebalancing,
+                                    equal-weight allocation). MOST LIKELY
+                                    home of MR edge if any -- per-ticker
+                                    timing formulation closed cross-
+                                    constraint at cc2e4c6.
+  WP-SIGNAL-MR-REGIME-CONDITIONAL — gate MR L/S signal on ^AXJO 200-DMA
+                                    regime. The short leg trend-fight
+                                    finding at cc2e4c6 suggests
+                                    regime-conditional gating could
+                                    suppress the bull-market short
+                                    drag. Pairs with
+                                    WP-SIGNAL-MR-CROSSSECTIONAL-V1 as
+                                    structural-pivot candidates.
+  WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT
+                                  — codify the concurrent-push pattern
+                                    in CLAUDE.md Commit-discipline:
+                                    after commit `git fetch origin
+                                    master`; if origin == parent push
+                                    FF directly; if origin advanced
+                                    HALT and let orchestrator sequence.
+                                    Do NOT `pull --rebase` on shared
+                                    dirty tree; do NOT autostash.
+                                    ~10-line amendment.
+
+Immediate queue — session 10:
 
   - Reconcile (this WP) -- mandatory first action, landing now.
-  - WP-INFRA-GITIGNORE-COMMIT-MSG-TMP -- optional T1 warm-up;
-    eliminates the post-stage-mv ordering constraint for all
-    future long-body commits.
-  - WP-INFRA-ENGINE-SHORTSIDE -- agreed prerequisite for the
-    constraint-axis pivot. Engine refactor: position series
-    {-1, 0, +1}, two-sided PnL, brokerage + slippage both sides,
-    gross-long + gross-short + net cash accounting. The now-
-    locked next move; sizeable WP, must complete before any
-    long-short signal test fires.
-  - First long-short signal test (WP-SIGNAL-MOMENTUM-LONGSHORT-V1
-    vs WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1) -- TO BE SETTLED
-    IN SESSION-9 STRATEGY DISCUSSION. Both gated on
-    WP-INFRA-ENGINE-SHORTSIDE. No primary marked; orchestrator
-    decides based on the long-only-constraint-vs-signal-mechanic
-    question framing.
-  - WP-INFRA-SUPABASE-NEW-KEY-MIGRATION -- hygiene closeout;
-    rotate the post-Norton-MITM-exposed service-role key via the
-    new JWT-signing-key migration path (Supabase legacy in-place
-    rotation EOL'd).
+  - WP-SIGNAL-MOMENTUM-LONGSHORT-V1 (PRIMARY) -- the cleaner test
+    of the long-only-constraint hypothesis. Momentum's short leg
+    trend-aligns (sell weak-trending tickers) rather than trend-
+    fighting like MR's short leg did. If long-short momentum shows
+    life where long-only momentum (80f9993) died, the long-only
+    constraint WAS the killer for momentum and the constraint-axis
+    pivot is validated for that family. If long-short momentum also
+    refutes, the per-ticker absolute-timing formulation is the
+    killer across both families and the next move is structural
+    (cross-sectional). Uses frozen engine (3cd4d0b) + borrow
+    tiering (median-ADV terciles 1/4/8 pct).
+  - WP-INFRA-SUPABASE-NEW-KEY-MIGRATION -- hygiene closeout; rotate
+    the post-Norton-MITM-exposed service-role key via the new JWT-
+    signing-key migration path.
+  - WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT -- ~10-line
+    CLAUDE.md amendment; pairs naturally with a reconcile slot.
+  - Stretch: WP-SIGNAL-MR-CROSSSECTIONAL-V1 OR
+    WP-SIGNAL-MR-REGIME-CONDITIONAL (structural MR pivots, only
+    if MOMENTUM-LONGSHORT-V1 is decisive and time permits).
 
 Signal design (Phase 2, months 2-4):
   WP-SIGNAL-HYPOTHESIS-V1       — one clear hypothesis (leaning earnings surprise + RSI<40 + above 200MA)
@@ -471,16 +568,16 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-All 5 terminals idle post-session-8 close.
-T1 — idle (closed 8ba9416 WP-INFRA-CLAUDEMD-COMMIT-CONVENTIONS-V2;
-            dogfooded $TEMP/mv long-body pattern under its own
-            documentation)
-T2 — idle (closed 80f9993 WP-SIGNAL-MOMENTUM-V1; per-ticker absolute
-            lookback REFUTED on 185 ASX 200 survivors)
-T3 — idle (not activated this session)
-T4 — idle (closed WP-META-SESSION7-CLOSE-AUDIT diagnostic; closed
-            a63cb38 WP-RECONCILE-SESSION-7-CLOSE resumed; closing
-            WP-RECONCILE-SESSION-8-CLOSE)
+All 5 terminals idle post-session-9 close.
+T1 — idle (closed 85da176 WP-INFRA-GITIGNORE-COMMIT-MSG-TMP;
+            anchored /.commit-msg.tmp; relaxed mv-after-stage
+            ordering)
+T2 — idle (closed 3cd4d0b WP-INFRA-ENGINE-SHORTSIDE -- engine
+            FROZEN long-short; closed cc2e4c6 WP-SIGNAL-MEAN-
+            REVERSION-LONGSHORT-V1 -- REFUTED worse than long-only)
+T3 — idle (closed cfc0e06 WP-INFRA-REQUIREMENTS-PIN; split to
+            6-pin requirements.txt + requirements.lock ARM64)
+T4 — idle (closing WP-RECONCILE-SESSION-9-CLOSE)
 T5 — held / spare (not activated this session)
 
 ═══════════════════════════════════════════════════════

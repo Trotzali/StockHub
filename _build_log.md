@@ -605,3 +605,148 @@ a63cb38 — 2026-05-31 — WP-RECONCILE-SESSION-7-CLOSE (T4, resumed)
   a63cb38 (c reuse), 80f9993 (c reuse).
 
   (Reconcile commits not logged per established convention.)
+
+═══════════════════════════════════════════════════════
+SESSION 9 — 2026-06-03
+═══════════════════════════════════════════════════════
+
+85da176 — 2026-06-03 — WP-INFRA-GITIGNORE-COMMIT-MSG-TMP (T1)
+  Anchored `/.commit-msg.tmp` entry added to .gitignore at
+  repo root. Closes the post-stage-mv ordering constraint
+  documented in CLAUDE.md "Why long commit bodies use
+  $TEMP/mv" (added by 8ba9416 amendment c). Prior reconciles
+  (a63cb38, 60d4181) had to time the mv from $TEMP to
+  .commit-msg.tmp AFTER the strict-literal SOLO status
+  assertion to avoid the `??` pollution; with the anchored
+  gitignore entry the mv may land at any point in the chain.
+  Triggered a CLAUDE.md follow-up amendment (line 154-160)
+  formalising the relaxation as established by this WP.
+  Tiny WP; .gitignore +1 line.
+  Gates: 60d4181.
+
+cfc0e06 — 2026-06-03 — WP-INFRA-REQUIREMENTS-PIN (T3)
+  Split dependency manifest into requirements.txt (6
+  top-level pins: python-dotenv, supabase, pandas,
+  yfinance, beautifulsoup4 - bs4 was an implicit yfinance
+  transitive used by seed_asx200.py, made explicit; plus a
+  6th) and requirements.lock (full ARM64 transitive set
+  captured via `pip freeze`). Reproducibility hole banked
+  in S7 reconcile (resumed S8) now closed; fresh-machine
+  setup has a pinned manifest. Locked manifest matches
+  current venv exactly; verified no install drift via
+  pip install --dry-run --only-binary :all: against the
+  lock file. ARM64-specific pins captured (win_arm64
+  wheels) so the same lock file is not portable to x64
+  Windows without a regenerate-on-target-arch step --
+  flagged in the manifest header.
+  Gates: 85da176.
+
+3cd4d0b — 2026-06-03 — WP-INFRA-ENGINE-SHORTSIDE (T2)
+  Extended src/backtest/engine.py from long-only ({0, 1})
+  to long-short ({NaN, -1, 0, +1}) with stateful
+  held-position semantics. Spec FROZEN at this commit for
+  reuse by all -LONGSHORT signal WPs. Key extensions:
+
+  - Position series: ternary {NaN warm-up, -1 short, 0
+    flat, +1 long}; stateful held-position (consecutive
+    same-side bars = continuous hold; +1 -> -1 = exit-long
+    + enter-short on same bar at signal-day close).
+  - PnL math: sign-flipped on short leg (price-down on a
+    short = positive return on that leg).
+  - Costs: symmetric -- 0.1% brokerage + $0.01/share
+    slippage applies to BOTH legs on every entry/exit.
+  - Borrow: pure-drag charge on abs short notional;
+    entry-inclusive / exit-exclusive day-counting; default
+    0.0 annualized (tunable per ticker). Charged daily.
+    Reverse-MTM at exit (no overnight-funding payment;
+    the drag IS the daily charge).
+  - Cash accounting: splits into gross-long + gross-short
+    + net; reports BOTH gross-of-borrow and net-of-borrow
+    metrics so the borrow contribution is visible.
+  - compute_metrics: gains gross-long / gross-short / net
+    attribution; alpha_vs_bh uses net.
+
+  V-walk regression: existing long-only callers (MA
+  crossover V1/V2/V3, MR z-score V1/V2, momentum V1) all
+  re-run; aggregate delta vs baseline = 0 (byte-identical
+  CSV outputs). signal_series protocol unchanged for
+  long-only callers (the engine accepts {0, 1} input and
+  treats as {0, 0, +1, 0}; short-side path quiescent).
+
+  Engine API now FROZEN: future signal families plug in
+  via signal_series of {-1, 0, +1} (or {0, 1} for
+  long-only); no further engine surface-area changes
+  expected unless a new structural axis (e.g. portfolio-
+  level rebalancing) requires it.
+  Gates: cfc0e06.
+
+cc2e4c6 — 2026-06-03 — WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1 (T2)
+  Re-run of the MR z-score family with the long-only
+  constraint flipped to long-short via the frozen engine
+  (3cd4d0b). Same signal function
+  (mean_reversion_zscore_signal extended to long-short:
+  long when z < -threshold, short when z > +threshold,
+  exit when |z| <= 0), same engine, same 6-combo grid,
+  same 60/40 holdout at 2024-07-01, same N=185 ASX 200
+  survivor universe as MR V2 (c823e20), same $10k/ticker
+  capital, same symmetric costs (0.1% brokerage + $0.01
+  slippage both legs), borrow charged via the frozen
+  engine's pure-drag model (annualized rates from borrow
+  tiering: 1% top-tier / 4% mid-tier / 8% bottom-tier by
+  median daily $-volume terciles).
+
+  Universe and excluded tickers identical to MR V2
+  (c823e20) / Momentum V1 (80f9993): N=185 survivors with
+  >= 504 rows pre-2024-07-01; 15 excluded (8 zero-row
+  orphans + 7 partial-history).
+
+  Borrow tiering (src/backtest/borrow_tiering.py): median
+  daily $-volume per ticker over the full sample, qcut
+  into 3 terciles, annualized rates assigned 1% / 4% / 8%
+  (top / mid / bottom liquidity). Full-sample
+  classification (structural cost assumption, not return
+  leakage). Paginated fetch (1000-row cap workaround
+  applies; PostgREST self-fetch must paginate).
+
+  Headline: REFUTED, decisively WORSE than long-only.
+  Winner combo (window=50, threshold=2.0, aggregate train
+  Sharpe selection): test net alpha -81.16% vs B&H (long-
+  only V2 winner was -35.89%; LS made it -45.27 pts
+  worse). Test gross alpha -77.55%; net-vs-gross gap
+  ~3.6 pts -- borrow drag is real but small relative to
+  the -77.55% gross loss. **The short leg lost money
+  fighting the trend, not paying borrow.**
+
+  KEY INTERPRETATION: lifting the long-only constraint
+  did NOT rescue mean-reversion -- it HURT it. The long-
+  only refutation (c823e20, -35.89%) was the better
+  outcome; the L/S version is worse because the short leg
+  trend-fights in the bull market test window. The
+  binding problem is the short leg's directional mismatch
+  with the universe-level drift, not the constraint
+  itself.
+
+  Implication for the constraint-axis hypothesis: the
+  long-only constraint is NOT the universal killer it
+  appeared to be after 6 long-only refutations. For MR,
+  long-only was actually the LESS BAD configuration.
+  Constraint-axis thesis remains OPEN for MOMENTUM
+  (where short leg trend-aligns rather than trend-fights);
+  long-short momentum is now the cleaner test of "long-
+  only constraint vs signal mechanic" question.
+
+  MR family CLOSED under per-ticker absolute timing
+  formulation. Further MR work must change signal
+  STRUCTURE -- cross-sectional (WP-SIGNAL-MR-CROSS-
+  SECTIONAL-V1, banked: long bottom-decile-z / short
+  top-decile-z, market-neutral) or regime-conditional
+  (WP-SIGNAL-MR-REGIME-CONDITIONAL, banked: gate L/S on
+  ^AXJO 200-DMA) -- not re-run per-ticker.
+
+  Refutation tally update: 7 total -- 6 long-only (MA
+  crossover V1/V2/V3, MR z-score V1/V2, momentum V1) + 1
+  long-short (MR-LS V1). Long-only constraint hypothesis
+  now nuanced: killer for momentum/MA?, helper for MR.
+  Gates: 3cd4d0b.
+
+  (Reconcile commits not logged per established convention.)

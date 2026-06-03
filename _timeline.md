@@ -1308,3 +1308,238 @@ IMMEDIATE QUEUE (SESSION 9):
     service-role key via the new JWT-signing-key
     migration path (Supabase legacy in-place rotation
     EOL'd).
+
+
+═══════════════════════════════════════════════════════
+SESSION 9 — 2026-06-03 (AEST)
+═══════════════════════════════════════════════════════
+
+OPEN
+  Opened with HEAD = 60d4181 (S8 reconcile close, the
+  documentation close that landed 2026-06-01 after the
+  three S8 substantive commits). Session-9 strategy
+  discussion settled the long-short ordering: build the
+  engine first (WP-INFRA-ENGINE-SHORTSIDE as gated
+  prerequisite), then fire the cleaner of the two long-
+  short signal tests. MR-LS was chosen as the first
+  signal test on the long-only-vs-signal-mechanic
+  question on the grounds that MR already had two
+  long-only refutations (cross-universe at c823e20) so
+  any rescue or worsening from constraint-flip would be
+  directly comparable. Two infra prerequisites also
+  shipped: WP-INFRA-GITIGNORE-COMMIT-MSG-TMP (relax the
+  post-stage-mv ordering from 8ba9416 amendment c) and
+  WP-INFRA-REQUIREMENTS-PIN (S7-banked reproducibility
+  hole, closed cfc0e06).
+
+WP-INFRA-GITIGNORE-COMMIT-MSG-TMP (T1, 85da176)
+  Anchored `/.commit-msg.tmp` entry added to .gitignore
+  at repo root. Closes the post-stage-mv ordering
+  constraint documented in CLAUDE.md "Why long commit
+  bodies use $TEMP/mv" (added by 8ba9416 amendment c).
+  Prior reconciles (a63cb38, 60d4181) had to time the mv
+  from $TEMP to .commit-msg.tmp AFTER the strict-literal
+  SOLO status assertion to avoid the `??` pollution;
+  with the anchored gitignore entry the mv may land at
+  any point in the chain, or the body can be written
+  directly to .commit-msg.tmp without any mv at all.
+  Triggered a follow-up CLAUDE.md amendment (line 154-
+  160) formalising the relaxation. Tiny WP; .gitignore
+  +1 line. Gate: 60d4181.
+
+WP-INFRA-REQUIREMENTS-PIN (T3, cfc0e06)
+  Split dependency manifest into requirements.txt (6
+  top-level pins: python-dotenv, supabase, pandas,
+  yfinance, beautifulsoup4 + 1 other; bs4 made explicit
+  after being an implicit yfinance transitive that
+  seed_asx200.py started consuming directly) and
+  requirements.lock (full ARM64 transitive set via
+  `pip freeze`). Reproducibility hole banked in S7
+  reconcile (resumed S8) now closed; fresh-machine setup
+  has a pinned manifest. Lock-file portability note in
+  header: NOT portable to x64 Windows without a
+  regenerate-on-target-arch step. Verified no install
+  drift via pip install --dry-run --only-binary :all:
+  against the lock file. Gate: 85da176.
+
+WP-INFRA-ENGINE-SHORTSIDE (T2, 3cd4d0b)
+  Extended src/backtest/engine.py from long-only
+  ({0, 1}) to long-short ({NaN, -1, 0, +1}) with
+  stateful held-position semantics. Spec FROZEN at this
+  commit for reuse by all -LONGSHORT signal WPs. Key
+  extensions: ternary position series with NaN warm-up
+  and stateful held-position (consecutive same-side bars
+  = continuous hold; +1 -> -1 = exit-long + enter-short
+  on same bar at signal-day close); PnL sign-flipped on
+  short leg; symmetric costs (0.1% brokerage + $0.01/
+  share slippage both legs every entry/exit); pure-drag
+  borrow charged daily on abs short notional (entry-
+  inclusive / exit-exclusive day-counting, default
+  annualized 0.0 -- tunable per ticker; reverse-MTM at
+  exit; the drag IS the daily charge); cash accounting
+  splits into gross-long + gross-short + net (reports
+  BOTH gross-of-borrow and net-of-borrow metrics).
+  V-walk regression: all 6 prior long-only callers (MA
+  crossover V1/V2/V3, MR z-score V1/V2, momentum V1)
+  re-run -- aggregate delta vs baseline = 0 (byte-
+  identical CSV outputs). signal_series protocol
+  unchanged for long-only callers. Engine API now
+  FROZEN. Gate: cfc0e06.
+
+WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1 (T2, cc2e4c6)
+  Re-run of MR z-score family with long-only constraint
+  flipped to long-short via the frozen engine. Same
+  signal function (extended to long-short: long when
+  z < -threshold, short when z > +threshold, exit when
+  |z| <= 0), same engine, same 6-combo grid, same 60/40
+  holdout at 2024-07-01, same N=185 ASX 200 survivor
+  universe as MR V2 (c823e20), same $10k/ticker, same
+  symmetric costs both legs, borrow charged via the
+  frozen engine's pure-drag model using borrow tiering
+  (src/backtest/borrow_tiering.py: median daily $-volume
+  terciles via qcut, annualized 1% top / 4% mid / 8%
+  bottom liquidity; full-sample classification;
+  paginated fetch -- the 1000-row cap workaround applies
+  to this new self-fetch consumer too).
+
+  Headline: REFUTED, DECISIVELY WORSE than long-only.
+  Winner combo (window=50, threshold=2.0) test net alpha
+  -81.16% vs B&H (long-only V2 winner was -35.89%; LS
+  made it -45.27 pts worse). Test gross alpha -77.55%;
+  net-vs-gross gap ~3.6 pts -- borrow drag is real but
+  small relative to the -77.55% gross loss. The short
+  leg lost money fighting the trend, not paying borrow.
+
+  KEY REFRAME: lifting the long-only constraint did NOT
+  rescue MR -- it HURT it. The long-only refutation was
+  the LESS BAD outcome; LS made it dramatically worse
+  because the short leg trend-fights in the bull-market
+  test window. The binding problem is the short leg's
+  directional mismatch with universe-level drift, not
+  the constraint itself. The S8 read ("6 consecutive
+  long-only refutations -> long-only is the prime
+  suspect") was the natural hypothesis but S9 falsifies
+  it for MR.
+
+  Implication for the constraint-axis thesis: long-only
+  constraint is NOT the universal killer it appeared to
+  be. For MR, long-only was actually the LESS BAD
+  configuration. Constraint-axis thesis remains OPEN
+  for MOMENTUM (where short leg trend-aligns -- sell
+  weak-trending tickers in a bull market -- rather than
+  trend-fights); long-short momentum is now the cleaner
+  test of the long-only-constraint-vs-signal-mechanic
+  question.
+
+  MR family CLOSED under per-ticker absolute timing.
+  Further MR work must change SIGNAL STRUCTURE (banked
+  WP-SIGNAL-MR-CROSSSECTIONAL-V1 long bottom-decile-z /
+  short top-decile-z market-neutral; banked
+  WP-SIGNAL-MR-REGIME-CONDITIONAL gating L/S on ^AXJO
+  200-DMA), not re-run a per-ticker formulation.
+
+  Refutation tally: 7 -- 6 long-only (MA crossover x3,
+  MR x2, momentum x1) + 1 long-short (MR-LS V1). The
+  long-only hypothesis is nuanced not universal: killer
+  for MA/momentum (TBD for momentum-LS), HELPER for MR.
+  Gate: 3cd4d0b.
+
+PROCESS LEARNINGS
+  - Long-only constraint is NOT the universal killer.
+    When N refutations share a constraint, that's a
+    HYPOTHESIS not a conclusion; lifting the constraint
+    is the falsification test and the result can go
+    either way. For MR it went the wrong way.
+  - Borrow drag is small relative to directional
+    mismatch (3.6 pts vs 77.55 pts gross loss on MR-LS
+    V1). Don't over-engineer borrow modelling at signal-
+    design stage; tiered 1/4/8 pct defaults sufficient
+    until a winner emerges.
+  - Constraint-axis thesis remains OPEN for momentum
+    (short leg trend-aligns); long-short momentum is the
+    cleaner test of the long-only-vs-signal-mechanic
+    question. Settled as primary for session 10.
+  - Engine spec FROZEN at 3cd4d0b. Future signal
+    families plug in via signal_series of {-1, 0, +1}
+    (or {0, 1}); no further engine surface-area changes
+    expected unless a new structural axis (cross-
+    sectional portfolio rebalancing) requires it.
+  - Borrow tiering classification choice: full-sample
+    (structural cost assumption) over rolling-window
+    (return-leakage risk). qcut on median daily $-volume.
+  - Concurrent-push pattern locked: fetch after commit;
+    FF-if-unmoved or HALT-on-divergence. Do NOT
+    `pull --rebase` on shared dirty tree; do NOT
+    autostash. Banked WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-
+    AMENDMENT to codify.
+  - Self-fetch pagination is durable: any new consumer
+    > 1000 rows must reuse the existing pagination
+    helper. Surfaced during borrow_tiering.py
+    implementation (median-ADV needed full per-ticker
+    history; hit PostgREST cap on first attempt).
+  - Requirements pinning split: 6-pin runtime
+    requirements.txt + full ARM64 transitive
+    requirements.lock; lock file NOT portable to x64
+    without regenerate-on-target-arch.
+
+═══════════════════════════════════════════════════════
+SESSION 9 CLOSE — 2026-06-03 AEST
+═══════════════════════════════════════════════════════
+
+SHIPPED (4 substantive WPs with commits + this reconcile):
+  85da176 — WP-INFRA-GITIGNORE-COMMIT-MSG-TMP (T1)
+  cfc0e06 — WP-INFRA-REQUIREMENTS-PIN (T3)
+  3cd4d0b — WP-INFRA-ENGINE-SHORTSIDE (T2; engine FROZEN)
+  cc2e4c6 — WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1 (T2;
+            REFUTED worse than long-only)
+
+PRODUCTION STATE AT CLOSE:
+  Supabase: 201 stocks, 239,694 prices, 0 signals
+  persisted (unchanged from session-6 close; S7/S8/S9
+  all backtest-only). Cumulative: 36 commits on master
+  (35 through cc2e4c6 + this reconcile; supersedes the
+  handover's drifted 34/30 figures -- git-authoritative).
+  Code: src/backtest/engine.py extended long-short and
+  FROZEN at 3cd4d0b; src/backtest/borrow_tiering.py new
+  (median-ADV terciles 1/4/8 pct); src/backtest/
+  signals.py + mean_reversion_zscore_longshort;
+  requirements.txt + requirements.lock new (cfc0e06);
+  .commit-msg.tmp anchored-gitignored (85da176).
+  Engine API FROZEN: signal_series of {-1,0,+1} or
+  {0,1}; symmetric costs both legs; pure-drag borrow;
+  gross + net reporting.
+  Signal-family scorecard: refutation tally 7 (6 long-
+  only + 1 long-short). MR family closed cross-
+  universe AND cross-constraint under per-ticker
+  absolute timing; structural pivots banked. Long-only-
+  constraint thesis falsified for MR; remains OPEN for
+  momentum (next test).
+
+HEAD at SESSION 9 close: cc2e4c6 (substantive). This
+reconcile commit (see `git log -1 --oneline`) is the
+documentation close.
+
+TERMINAL STATES AT CLOSE:
+  T1 — idle (closed 85da176)
+  T2 — idle (closed 3cd4d0b engine FROZEN; closed
+              cc2e4c6 MR-LS REFUTED worse than long-only)
+  T3 — idle (closed cfc0e06)
+  T4 — idle (closing WP-RECONCILE-SESSION-9-CLOSE)
+  T5 — held / spare (not activated this session)
+
+IMMEDIATE QUEUE (SESSION 10):
+  - Reconcile (this WP) -- mandatory first action,
+    landing now.
+  - WP-SIGNAL-MOMENTUM-LONGSHORT-V1 (PRIMARY) -- cleaner
+    test of the long-only-constraint hypothesis on a
+    signal where the short leg trend-aligns. Uses
+    frozen engine (3cd4d0b) + borrow tiering.
+  - WP-INFRA-SUPABASE-NEW-KEY-MIGRATION -- hygiene
+    closeout for the post-Norton-MITM key exposure.
+  - WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT --
+    ~10-line CLAUDE.md amendment codifying the
+    concurrent-push pattern.
+  - Stretch: WP-SIGNAL-MR-CROSSSECTIONAL-V1 OR
+    WP-SIGNAL-MR-REGIME-CONDITIONAL (structural MR
+    pivots; only if MOMENTUM-LONGSHORT-V1 is decisive
+    and time permits).

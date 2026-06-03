@@ -151,35 +151,6 @@ WP-DATA-ASX200-ORPHANS-V2
   where possible. Low priority; not blocking universe tests at 185
   survivors.
 
-WP-INFRA-REQUIREMENTS-PIN
-  Author a proper requirements.txt with pinned versions (separate
-  runtime / dev manifests if useful). Project currently has no
-  pinned dependency manifest; reproducibility relies on local
-  interpreter state + the `--only-binary :all:` pip policy. Treated
-  as carry-forward banked in the Session 8 OPEN handover but absent
-  from _ideas.md -- orchestrator-side miss surfaced and corrected in
-  this reconcile. Low priority while project remains solo +
-  single-env.
-
-WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1
-  Re-run the just-refuted MR z-score family with the long-only
-  constraint flipped to long-short. Isolates the constraint-axis from
-  the family-axis: if long-short MR shows life where long-only died,
-  the killer was the constraint not the signal. (Confirmed NOT
-  previously banked -- the "long-short banked since session 3" note
-  did not materialise in _ideas.md or _project_state.md.) Gated on
-  WP-INFRA-ENGINE-SHORTSIDE.
-
-WP-INFRA-GITIGNORE-COMMIT-MSG-TMP
-  Add `.commit-msg.tmp` to .gitignore. Eliminates the post-stage-mv
-  ordering constraint documented in CLAUDE.md "Why long commit
-  bodies use $TEMP/mv": today .commit-msg.tmp is NOT gitignored, so
-  the mv from $TEMP MUST land AFTER the strict-literal SOLO status
-  assertion (otherwise it appears as `??` and breaks the
-  assertion). Once gitignored, the mv can happen at any point in
-  the chain. Trivial WP: .gitignore edit + check-ignore trip-wire
-  verify + one reconcile to validate. Banked by 8ba9416 commit body.
-
 WP-INFRA-SUPABASE-NEW-KEY-MIGRATION
   Supersedes WP-INFRA-ROTATE-SERVICE-KEY. Supabase legacy HS256-
   signed JWT in-place rotation is EOL'd (S8 discovery during
@@ -188,28 +159,6 @@ WP-INFRA-SUPABASE-NEW-KEY-MIGRATION
   supabase-py reach with 1-row probe, retire old key. Originally
   banked S7 post-Norton-MITM as ~10-min hygiene; now sizeable
   enough to need its own planning + provisioning effort.
-
-WP-INFRA-ENGINE-SHORTSIDE
-  Extend src/backtest/engine.py from long-only to long-short.
-  Required prerequisite for any -LONGSHORT signal WP (MR or
-  momentum). Affects engine API:
-    - position series: {0, 1} -> {-1, 0, +1}
-    - PnL math: gains short-side P&L (price-down = positive return
-      on the short leg)
-    - costs: 0.1% brokerage + $0.01 slippage applies to BOTH sides
-      on every entry/exit
-    - cash accounting: splits into gross-long + gross-short + net
-      (margin/short-borrow ignored for V1; treat as zero-cost
-      short for the initial backtest, flag as deviation)
-    - signal_series protocol: caller still precomputes the
-      position-target series; engine slices from first non-NaN
-      same as long-only
-    - compute_metrics: gains gross-long vs gross-short vs net
-      attribution
-  Sizeable WP. V-walk requirement: hand-reconcile a 3-day MR short
-  entry on CBA.AX end-to-end. Banked WP-SIGNAL-MEAN-REVERSION-
-  LONGSHORT-V1 + WP-SIGNAL-MOMENTUM-LONGSHORT-V1 both gated on
-  this.
 
 WP-SIGNAL-MOMENTUM-LONGSHORT-V1
   Same momentum spec as V1 (absolute lookback, N in {63, 126, 252},
@@ -232,7 +181,43 @@ WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1
   Larger engine surface area: needs cross-sectional rank
   precomputation, portfolio-level rebalancing, equal-weight
   allocation -- likely a separate engine path or significant
-  extension. Banked, not session-9 candidate.
+  extension. Banked, not session-10 candidate.
+
+WP-SIGNAL-MR-CROSSSECTIONAL-V1
+  Long bottom-decile-z / short top-decile-z daily; market-neutral.
+  Needs ranking/portfolio plumbing (cross-sectional rank
+  precomputation, portfolio-level rebalancing, equal-weight
+  allocation per leg). The per-ticker absolute-timing formulation
+  closed cross-constraint at cc2e4c6 (long-only -35.89%, long-
+  short -81.16% test alpha); structural pivot to cross-sectional
+  is the MOST LIKELY home of MR edge if any exists in this
+  universe. Larger engine surface area shared with
+  WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1 (both need the same
+  cross-sectional ranking + portfolio rebalancing plumbing) --
+  consider whether to build a shared cross-sectional-portfolio
+  engine path or separate WPs per family.
+
+WP-SIGNAL-MR-REGIME-CONDITIONAL
+  Gate MR L/S signal on ^AXJO 200-DMA regime: only enter when
+  regime is risk-off (^AXJO below its 200-DMA), suppress entries
+  in bull regimes. The cc2e4c6 finding (short leg lost fighting
+  the trend, not paying borrow) suggests regime-conditional
+  gating could remove the bull-market short drag while preserving
+  any genuine mean-reversion effect in choppier regimes. Pairs
+  with WP-SIGNAL-MR-CROSSSECTIONAL-V1 as the two structural-MR
+  pivots banked at S9 close. Reuses the existing regime_above_ma
+  helper (bfaa817).
+
+WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT
+  Codify the concurrent-push pattern in CLAUDE.md Commit-
+  discipline section: after `git commit` run `git fetch origin
+  master`; if `origin/master` == your commit's parent push
+  directly (clean FF); if origin advanced HALT and let the
+  orchestrator sequence the rebase. Do NOT `git pull --rebase`
+  on a shared dirty tree; do NOT autostash. ~10-line amendment;
+  thematic bullet in the Rules block (per the "Why <X>"
+  thematic-ordering convention locked at S8). Pairs naturally
+  with a reconcile slot as session-10 warm-up.
 
 ═══════════════════════════════════════════════════════
 RETIRED (closed this session)
@@ -293,6 +278,32 @@ WP-META-SESSION7-CLOSE-AUDIT        — CLOSED UNSHIPPED (session 8;
                                       missed S7 Phase B
                                       authorization; triggered
                                       a63cb38 resumed reconcile)
+WP-INFRA-GITIGNORE-COMMIT-MSG-TMP   — closed 85da176 (session 9;
+                                      anchored /.commit-msg.tmp in
+                                      .gitignore; relaxes mv-after-
+                                      stage ordering constraint from
+                                      8ba9416 amendment c)
+WP-INFRA-REQUIREMENTS-PIN           — closed cfc0e06 (session 9;
+                                      split to 6-pin requirements.txt
+                                      + requirements.lock ARM64
+                                      transitive set; bs4 made
+                                      explicit)
+WP-INFRA-ENGINE-SHORTSIDE           — closed 3cd4d0b (session 9;
+                                      long-short engine spec FROZEN;
+                                      regression-clean delta 0
+                                      across 6 prior long-only
+                                      callers; pure-drag borrow with
+                                      tiered defaults)
+WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1
+                                    — closed cc2e4c6 (session 9;
+                                      REFUTED DECISIVELY WORSE than
+                                      long-only -- test net alpha
+                                      -81.16% vs -35.89%; short leg
+                                      trend-fights, not borrow drag
+                                      [net-vs-gross gap ~3.6 pts];
+                                      MR family closed cross-
+                                      constraint under per-ticker
+                                      absolute timing)
 
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
@@ -549,3 +560,68 @@ Process learnings (SESSION 8):
   prerequisite for the constraint-axis pivot. Sizeable WP;
   first engine-shape change since 8782a6a (signal_fn ->
   signal_series, session 5).
+
+Process learnings (SESSION 9):
+- Long-only constraint is NOT the universal killer. The S8 read
+  ("6 consecutive long-only refutations -> long-only is prime
+  suspect") was the natural hypothesis but S9 falsified it for
+  MR: long-short MR (cc2e4c6) was DECISIVELY WORSE than long-
+  only MR (c823e20) -- test net alpha -81.16% vs -35.89%. The
+  killer for MR is the short leg's directional mismatch with
+  bull-market drift, not the constraint. Lesson: when N
+  refutations share a constraint, that's a HYPOTHESIS not a
+  conclusion; lifting the constraint is the falsification test
+  and the result can go either way.
+- Borrow drag is small relative to directional mismatch.
+  Net-vs-gross gap on MR-LS V1 was ~3.6 pts on a -77.55% gross
+  loss. Borrow is a real cost but not the binding constraint
+  when the short leg is fighting the trend. Implication: don't
+  over-engineer borrow modelling at the signal-design stage --
+  the tiered 1/4/8 pct defaults are sufficient until a winner
+  emerges and frictional precision matters.
+- Constraint-axis hypothesis remains OPEN for momentum. The
+  short leg in long-short momentum trend-aligns (sell weak-
+  trending tickers in a bull market) rather than trend-fighting
+  (selling overvalued-by-MR tickers that keep rising). The
+  signal-mechanic-vs-constraint question now has a cleaner test:
+  WP-SIGNAL-MOMENTUM-LONGSHORT-V1 on the same universe + frozen
+  engine. If long-short momentum shows life where long-only
+  momentum died, constraint was the killer for that family. If
+  it also refutes, the per-ticker absolute-timing formulation
+  is the killer across families and structural pivots
+  (cross-sectional) become the necessary next move.
+- Engine spec FROZEN at 3cd4d0b. Long-short capable, regression-
+  clean across all 6 prior long-only callers (delta 0). Future
+  signal families plug in via signal_series of {-1, 0, +1} (or
+  {0, 1} for long-only) -- no further engine surface-area
+  changes expected unless a new structural axis (e.g. portfolio-
+  level rebalancing for cross-sectional WPs) requires it. The
+  cross-sectional WPs (MR-CROSS-SECTIONAL, MOMENTUM-CROSS-
+  SECTIONAL) will likely need a NEW engine path or significant
+  extension, not the frozen one.
+- Borrow tiering classification choice: full-sample (structural
+  cost assumption) over rolling-window (return-leakage risk).
+  Median daily $-volume terciles via qcut. If a future WP wants
+  rolling-window classification (e.g. to reflect ADV regime
+  changes), surface as a separate WP -- the full-sample
+  classification is the locked V1 convention.
+- Concurrent-push pattern locked. After commit: fetch origin
+  master; FF-if-unmoved or HALT-on-divergence. Do NOT
+  `pull --rebase` on shared dirty tree; do NOT autostash.
+  Banked WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT to codify
+  in CLAUDE.md. The dirty-tree autostash hazard is real because
+  other terminals' in-flight files would be disturbed.
+- Self-fetch pagination is durable: any new consumer reading
+  > 1000 rows from prices (or any future high-row-count table)
+  must reuse the existing pagination helper, not reimplement.
+  Surfaced during borrow_tiering.py implementation -- the
+  median-ADV computation needed full per-ticker history and
+  hit the PostgREST 1000-row cap on the first attempt.
+- Requirements pinning split into runtime + lock files. 6
+  top-level pins in requirements.txt (with bs4 made explicit
+  after being an implicit yfinance transitive that
+  seed_asx200.py started consuming directly); full ARM64
+  transitive set in requirements.lock via pip freeze. Lock
+  file is NOT portable to x64 Windows without regenerate-on-
+  target-arch -- header note. Reproducibility hole banked S7
+  now closed.
