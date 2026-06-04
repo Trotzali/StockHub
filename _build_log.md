@@ -750,3 +750,94 @@ cc2e4c6 — 2026-06-03 — WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1 (T2)
   Gates: 3cd4d0b.
 
   (Reconcile commits not logged per established convention.)
+
+═══════════════════════════════════════════════════════
+SESSION 10 — 2026-06-04
+═══════════════════════════════════════════════════════
+
+af791a2 — 2026-06-04 — WP-RECONCILE-SESSION-9-CLOSE (T4, late-landed)
+  Session-9 reconcile late-landed by ~12 hours: shipped
+  2026-06-04T07:02:38 (the morning AFTER S9's substantive
+  commits of 2026-06-03). Booked here per the late-landed-
+  reconcile precedent established by a63cb38 (S7 reconcile
+  late-landed in S8 by weeks). The on-schedule reconcile
+  convention (60d4181) would NOT book as a SHA-date-WP
+  entry; the late-landed precedent overrides.
+
+  Closed S9: 4 substantive commits banked (85da176
+  GITIGNORE-COMMIT-MSG-TMP, cfc0e06 REQUIREMENTS-PIN,
+  3cd4d0b ENGINE-SHORTSIDE, cc2e4c6 MEAN-REVERSION-
+  LONGSHORT-V1). 6 new LOCKED DECISIONS appended (long-
+  short engine spec frozen, borrow tiering, MR family
+  closed cross-constraint, long-only-constraint-not-
+  universal reframe, concurrent-push fix, paginate self-
+  fetches). 4 entries removed from _ideas.md BANKED, 3
+  new added (MR-CROSSSECTIONAL-V1, MR-REGIME-CONDITIONAL,
+  CLAUDEMD-CONCURRENT-PUSH-AMENDMENT). 8 SESSION 9
+  calibration notes. Cumulative recorded as 36 commits
+  (35 through cc2e4c6 + the reconcile; supersedes the
+  S8-handover's drifted 34/30 figures -- git-
+  authoritative).
+  Gates: cc2e4c6.
+
+7ea4c08 — 2026-06-04 — WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1 (T1)
+  Cross-sectional momentum long-short via the frozen
+  engine (3cd4d0b): per-ticker ternary from a daily
+  cross-sectional rank, monthly rebalance, fixed K=18/leg,
+  equal $10k/name ($180k/leg, $360k gross, dollar-
+  neutral), per-ticker tiered borrow (median-ADV terciles
+  1/4/8 pct annualised from borrow_tiering.py). J grid in
+  {63, 126, 252}; winner J=252 by aggregate TRAIN net
+  Sharpe (+0.216); TEST held out per the locked guardrail.
+
+  Headline: REFUTED. TEST net total return -2.05%,
+  Sharpe -0.174, alpha vs ^AXJO -8.71% (^AXJO +6.65% over
+  2024-07-31..2026-05-18 test window). Borrow drag only
+  +0.94% (gross -1.11% vs net -2.05%) -- borrow not the
+  driver, same pattern as MR-LS V1 (cc2e4c6).
+
+  Decomposition (winner J=252, TEST):
+  - Long top-decile sleeve +6.87% ~= ^AXJO +6.65% -- long
+    leg is BETA, no alpha.
+  - Short bottom-decile sleeve -8.93% -- THE KILLER;
+    bottom-decile names out-rallied top-decile (junk-rally
+    / momentum-crash signature).
+  - Sum-of-per-ticker long B&H +33.91% -- holding the
+    universe crushed the L/S by ~36 pts; selecting 36 of
+    185 and shorting the wrong 18 forfeited the bulk of
+    the market's return.
+
+  CROSS-TEST FINDING: both long-short tests (MR-LS
+  cc2e4c6, momentum-XSEC-LS 7ea4c08) died on the SHORT
+  leg in a rising market, borrow immaterial both times.
+  Short-side selection is structurally loss-making in
+  this regime/universe. Survivorship flatters momentum
+  yet it still failed -- strengthens the refutation.
+
+  CONCLUSION: across 3 signal families x {long-only,
+  long-short} on liquid ASX-200 survivors over a multi-
+  year bull, no simple price-based edge beats holding the
+  universe. Price-only-on-liquid-ASX thesis CLOSED
+  (negative). Cross-sectional momentum family closed.
+  Refutation tally now 7 -- count unchanged but
+  qualitatively different: the cross-sectional canonical
+  formulation (the one that produced the well-documented
+  academic result in US equities) also fails on this
+  universe.
+
+  V-walks (rank, hold, holdout-split, sum-invariant) all
+  PASS; sum-invariant delta 0.0 net+gross -- result
+  trustworthy, not an implementation bug.
+
+  Banked: WP-SIGNAL-MOMENTUM-XSEC-QUINTILE-V1 (breadth
+  robustness, low prior). Strategic fork decided at S10
+  reconcile: out-of-data-type fundamentals/quality FIRST
+  on the current liquid universe (isolate the signal-type
+  variable; low turnover; reuse plumbing), out-of-universe
+  smaller-cap SECOND (only if quality shows a pulse),
+  plus a defensive trend-overlay sleeve (risk-management,
+  NOT alpha; pays the cash-drag premium; crash backtests
+  low-power -- interpret with care).
+  Gates: af791a2.
+
+  (Reconcile commits not logged per established convention.)

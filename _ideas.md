@@ -169,20 +169,6 @@ WP-SIGNAL-MOMENTUM-LONGSHORT-V1
   whether the momentum family responds to constraint-axis flip the
   same way MR-LS might. Gated on WP-INFRA-ENGINE-SHORTSIDE.
 
-WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1
-  Explicitly banked in 80f9993 commit body. Cross-sectional ranked-
-  momentum portfolio (top-decile-by-12mo-return holding equal-
-  weight, rebalanced monthly), backtested as ONE portfolio rather
-  than 185 per-ticker timing signals. The Jegadeesh-Titman
-  canonical formulation -- the one that produced the well-
-  documented effect in the US-equities literature. Independent of
-  WP-SIGNAL-MOMENTUM-LONGSHORT-V1 (different mechanic: this is
-  portfolio construction by relative rank, not per-ticker timing).
-  Larger engine surface area: needs cross-sectional rank
-  precomputation, portfolio-level rebalancing, equal-weight
-  allocation -- likely a separate engine path or significant
-  extension. Banked, not session-10 candidate.
-
 WP-SIGNAL-MR-CROSSSECTIONAL-V1
   Long bottom-decile-z / short top-decile-z daily; market-neutral.
   Needs ranking/portfolio plumbing (cross-sectional rank
@@ -216,8 +202,61 @@ WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT
   orchestrator sequence the rebase. Do NOT `git pull --rebase`
   on a shared dirty tree; do NOT autostash. ~10-line amendment;
   thematic bullet in the Rules block (per the "Why <X>"
-  thematic-ordering convention locked at S8). Pairs naturally
-  with a reconcile slot as session-10 warm-up.
+  thematic-ordering convention locked at S8). Process WP; pairs
+  naturally with a reconcile slot as session-N warm-up.
+
+WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE
+  PROMOTED TO PRIMARY for session 11 per S10 strategic pivot.
+  Gating WP for the fundamentals/quality arc. Phase A read-only:
+  what fundamental fields are reliably sourceable for ASX via
+  yfinance (Ticker.info, Ticker.financials), Finnhub (free tier),
+  AlphaVantage (free tier); history depth (point-in-time vs
+  latest-snapshot; restatement handling); coverage of the
+  current 185-survivor universe (some ASX 200 names may have
+  thin fundamentals coverage from US-centric providers).
+  Finnhub + AlphaVantage keys still present-but-empty
+  placeholders in .env -- provisioning may be a precondition.
+  Outcomes lock the spec for WP-SIGNAL-QUALITY-VALUE-XSEC-V1.
+  Read-only investigation; no Phase B until data-source
+  feasibility is fully characterised.
+
+WP-SIGNAL-QUALITY-VALUE-XSEC-V1
+  Quality/value cross-sectional signal on the current liquid
+  universe (185 ASX 200 survivors). Composite ranking on a small
+  basket of fundamental ratios (e.g. low P/E + high ROE + low
+  debt/equity, or earnings yield + revenue growth). Monthly or
+  quarterly rebalance (low-turnover by design -- fundamentals
+  change slowly). Long top-decile / short bottom-decile via
+  frozen engine + borrow tiering (or long-only if S10 short-leg
+  finding suggests dropping the short for this signal type).
+  Tests whether out-of-data-type pivot (fundamentals vs price)
+  finds edge that price-based signals could not. GATED on
+  WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE.
+
+WP-OVERLAY-TREND-REGIME-CRASH-SLEEVE
+  Always-on ^AXJO 200-DMA trend overlay as a defensive sleeve.
+  Insurance-with-premium framing: pays the cash-drag premium
+  during sustained bull regimes (e.g. 2022-2026) in exchange
+  for reducing exposure during trend-down regimes. Risk-
+  management WP, NOT alpha-generation -- explicitly does not
+  attempt to beat the market on average, only to reduce
+  drawdown in tail regimes. Reuses regime_above_ma helper
+  (bfaa817) over ^AXJO and a binary gate on whole-portfolio
+  exposure. Low-power crash-backtest caveat: the available
+  sample (2021-2026) contains few crash episodes; metric
+  interpretation requires care. Can run in parallel with the
+  fundamentals arc (independent code path).
+
+WP-SIGNAL-MOMENTUM-XSEC-QUINTILE-V1
+  Breadth robustness probe; low prior. Banked in 7ea4c08
+  commit body. Same cross-sectional ranking + monthly rebal as
+  7ea4c08 but with quintile breadth (K=37/leg) rather than
+  decile (K=18/leg). Tests whether the 7ea4c08 refutation is
+  robust to breadth choice or specific to the decile cut. Low
+  prior: the cross-test finding (short-leg-directional-mismatch
+  is structural in this regime/universe) suggests breadth
+  won't rescue. Fire only if a specific reason to revisit
+  cross-sectional momentum emerges.
 
 ═══════════════════════════════════════════════════════
 RETIRED (closed this session)
@@ -304,6 +343,19 @@ WP-SIGNAL-MEAN-REVERSION-LONGSHORT-V1
                                       MR family closed cross-
                                       constraint under per-ticker
                                       absolute timing)
+WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1
+                                    — closed 7ea4c08 (session 10;
+                                      REFUTED test net alpha vs ^AXJO
+                                      -8.71%; short leg the killer
+                                      (-8.93% vs long +6.87% ~= beta);
+                                      borrow drag immaterial (+0.94%);
+                                      Jegadeesh-Titman canonical
+                                      formulation also fails on this
+                                      universe; cross-sectional
+                                      momentum family closed; price-
+                                      only-on-liquid-ASX thesis CLOSED;
+                                      triggered S10 strategic pivot to
+                                      fundamentals/quality)
 
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
@@ -625,3 +677,76 @@ Process learnings (SESSION 9):
   file is NOT portable to x64 Windows without regenerate-on-
   target-arch -- header note. Reproducibility hole banked S7
   now closed.
+
+Process learnings (SESSION 10):
+- Cross-test isolation completes the price-only-on-liquid-ASX
+  refutation. S9 + S10 together: BOTH long-short tests (MR-LS
+  cc2e4c6, momentum-XSEC-LS 7ea4c08) died on the SHORT leg in
+  a rising market with borrow drag immaterial in both cases
+  (~3.6 pts on MR-LS, ~0.94 pts on momentum-XSEC). This is two
+  independent data points isolating short-side directional
+  mismatch as the structural problem, NOT borrow costs or
+  signal-specific issues. Lesson: when N tests share a failure
+  mode, the cross-family commonality is the durable finding;
+  the family-specific narrative is incidental.
+- Cross-sectional canonical formulations fail too. 7ea4c08
+  tested the Jegadeesh-Titman canonical momentum formulation
+  (top-decile / bottom-decile by lookback return, equal-weight,
+  monthly rebal) -- the one with the strongest academic prior
+  in US equities. It also failed on this universe. Implication:
+  the well-documented US-equities momentum effect does not
+  cleanly translate to liquid ASX-200 survivors over the 2022-
+  2026 bull. Either the regime is different (bull markets
+  flatten the cross-sectional ranking signal) or the universe
+  is different (deeper institutional arbitrage in ASX blue
+  chips erodes the retail-driven momentum effect) -- both are
+  hypotheses, not conclusions.
+- Long top-decile sleeve ~= index beta (7ea4c08 J=252 winner:
+  long sleeve +6.87% vs ^AXJO +6.65%). The long leg captures
+  no alpha relative to holding the universe; the differential
+  ~36 pts loss vs sum-of-per-ticker B&H (+33.91%) is the
+  opportunity cost of holding 36 of 185 names instead of all
+  185, plus the active loss from shorting the wrong 18.
+- Strategic pivot decision framework: "change ONE variable at
+  a time". After exhausting price-based signals on a fixed
+  universe, the decision tree is: (a) change DATA TYPE first
+  (price -> fundamentals/quality) on the SAME universe, to
+  isolate whether signal-type is the variable; (b) change
+  UNIVERSE second (liquid-ASX -> smaller-cap) ONLY IF (a)
+  reveals edge, because changing both simultaneously cannot
+  isolate which variable rescued any positive result. The
+  inverse ordering (universe first) was considered and
+  rejected on this principle.
+- Defensive overlay sleeve framing: risk-management WP, NOT
+  alpha. Always-on ^AXJO 200-DMA trend overlay pays a cash-
+  drag premium during sustained bull regimes in exchange for
+  reduced exposure during trend-down regimes. Crash backtests
+  on the available 2021-2026 sample are LOW POWER (few crash
+  episodes) -- metric interpretation requires care. Don't
+  conflate "small drawdown reduction in sample" with "robust
+  insurance"; the bar is regime-independence of the
+  protection, which the sample can't establish.
+- S9-close primary recommendation (WP-SIGNAL-MOMENTUM-
+  LONGSHORT-V1) was superseded mid-session by the orchestrator
+  pivot to cross-sectional momentum (7ea4c08), which delivered
+  a broader-implication refutation that obviated the original
+  constraint-axis question. Lesson: session-close immediate-
+  queue recommendations are ranking guides, not commitments;
+  the orchestrator retains pivot authority based on broader
+  context (e.g. choosing the test that produces the more
+  general result). The S9 primary stays banked as a residual.
+- Late-landed-reconcile booking convention now has 2
+  precedents (a63cb38 S7-reconcile-in-S8 by weeks, af791a2
+  S9-reconcile-in-S10 by ~12 hours). Trigger is calendar-date
+  separation, not magnitude of delay. The convention is
+  stable; future late-landed reconciles get booked as SHA-
+  date-WP entries in the closing session's block; on-schedule
+  reconciles remain in the closer parenthetical only.
+- Environment: transient node API ECONNREFUSED observed during
+  a T-fire window on 2026-06-04; network, Norton-toggle, and
+  proxy all verified clean; resolved on retry; no config
+  change. Diagnostic-first discipline (S7 calibration) paid
+  off again -- the temptation to "try something" was resisted
+  in favour of verifying environment first; retry succeeded
+  with no intervention. If recurring, surface for deeper
+  investigation; if isolated, file as transient infra noise.

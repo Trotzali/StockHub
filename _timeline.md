@@ -1543,3 +1543,243 @@ IMMEDIATE QUEUE (SESSION 10):
     WP-SIGNAL-MR-REGIME-CONDITIONAL (structural MR
     pivots; only if MOMENTUM-LONGSHORT-V1 is decisive
     and time permits).
+
+
+═══════════════════════════════════════════════════════
+SESSION 10 — 2026-06-04 (AEST)
+═══════════════════════════════════════════════════════
+
+OPEN
+  Opened with HEAD = cc2e4c6 (S9 substantive close;
+  reconcile not yet landed -- a Phase A had landed
+  2026-06-03 but Phase B was authorized in the morning of
+  2026-06-04). Two-action plan: (1) ship the S9 reconcile
+  first (af791a2, late-landed by ~12h per the precedent),
+  (2) fire the next signal WP. The S9-close primary was
+  WP-SIGNAL-MOMENTUM-LONGSHORT-V1; mid-session the
+  orchestrator pivoted to WP-SIGNAL-MOMENTUM-CROSS-
+  SECTIONAL-V1 instead -- the cross-sectional canonical
+  formulation has a stronger academic prior and tests a
+  more general question (does the canonical Jegadeesh-
+  Titman result translate to ASX-200), and a refutation
+  there would have broader implications than the per-
+  ticker long-short flip.
+
+WP-RECONCILE-SESSION-9-CLOSE (T4, af791a2, late-landed)
+  Late-landed by ~12 hours from S9's substantive commits
+  (2026-06-03) to 2026-06-04T07:02 close. Booked per the
+  late-landed-reconcile precedent (a63cb38 in S8 by
+  weeks). 4 state files refreshed to S9-close baseline:
+  6 new LOCKED DECISIONS (long-short engine FROZEN spec,
+  borrow tiering, MR family closed cross-constraint,
+  long-only-not-universal-killer reframe, concurrent-push
+  fix, paginate self-fetches); 4 entries removed from
+  _ideas.md BANKED + 3 new added (MR-CROSSSECTIONAL-V1,
+  MR-REGIME-CONDITIONAL, CLAUDEMD-CONCURRENT-PUSH-
+  AMENDMENT); 8 SESSION 9 calibration notes; cumulative
+  recorded 36 commits (35 through cc2e4c6 + the
+  reconcile; supersedes the S8-handover's drifted 34/30
+  figures -- git-authoritative).
+
+WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1 (T1, 7ea4c08)
+  Cross-sectional momentum long-short via the frozen
+  engine (3cd4d0b): per-ticker ternary from a daily
+  cross-sectional rank, monthly rebalance, fixed K=18/leg,
+  equal $10k/name ($180k/leg, $360k gross, dollar-
+  neutral), per-ticker tiered borrow (median-ADV terciles
+  1/4/8 pct annualised from borrow_tiering.py). J grid
+  in {63, 126, 252}; winner J=252 by aggregate TRAIN net
+  Sharpe (+0.216); TEST held out per the locked
+  guardrail. New: cross-sectional ranking + monthly-rebal
+  portfolio plumbing layered on the frozen engine via
+  signal_series ternary; no engine-surface-area changes.
+
+  Headline: REFUTED. TEST net total return -2.05%,
+  Sharpe -0.174, alpha vs ^AXJO -8.71% (^AXJO +6.65%
+  over 2024-07-31..2026-05-18 test window). Borrow drag
+  only +0.94% (gross -1.11% vs net -2.05%) -- borrow not
+  the driver, same pattern as MR-LS V1 (cc2e4c6).
+
+  Decomposition (winner J=252, TEST): long top-decile
+  sleeve +6.87% ~= ^AXJO +6.65% (long leg is BETA, no
+  alpha); short bottom-decile sleeve -8.93% (THE KILLER;
+  bottom-decile names out-rallied top-decile -- junk-
+  rally / momentum-crash signature); sum-of-per-ticker
+  long B&H +33.91% (holding the universe crushed the L/S
+  by ~36 pts).
+
+  CROSS-TEST FINDING (S9 + S10 together): both long-
+  short tests (MR-LS cc2e4c6, momentum-XSEC-LS 7ea4c08)
+  died on the SHORT leg in a rising market, borrow
+  immaterial both times. Short-side selection is
+  structurally loss-making in this regime/universe.
+  Survivorship flatters momentum yet it still failed --
+  strengthens the refutation.
+
+  CONCLUSION: across 3 signal families x {long-only,
+  long-short} x {per-ticker timing, cross-sectional
+  ranked} on liquid ASX-200 survivors over a multi-year
+  bull, no simple price-based edge beats holding the
+  universe. Price-only-on-liquid-ASX thesis CLOSED
+  (negative). Cross-sectional momentum family closed.
+  Refutation tally 7 -- unchanged in count but
+  qualitatively conclusive: the canonical Jegadeesh-
+  Titman formulation also fails on this universe.
+
+  V-walks (rank, hold, holdout-split, sum-invariant) all
+  PASS; sum-invariant delta 0.0 net+gross -- result
+  trustworthy, not an implementation bug.
+
+  Banked: WP-SIGNAL-MOMENTUM-XSEC-QUINTILE-V1 (breadth
+  robustness, low prior; in commit body). Strategic fork
+  OPEN at commit time, decided at S10 reconcile.
+
+MID-SESSION STRATEGIC PIVOT (decided at S10 reconcile)
+  Three options on the table after 7ea4c08:
+    (a) Accept the negative result on liquid-ASX price
+        signals and pivot to a different DATA TYPE
+        (fundamentals/quality) on the SAME universe.
+    (b) Pivot to a different UNIVERSE (smaller-cap, less
+        institutionally arbitraged) keeping price-based
+        signals.
+    (c) Both simultaneously (smaller-cap + fundamentals).
+  Decision: (a) FIRST, (b) SECOND only if (a) reveals
+  edge, NEVER both at once. Rationale: change one
+  variable at a time -- changing both simultaneously
+  cannot isolate which variable rescued any positive
+  result. Plus a parallel defensive trend-overlay sleeve
+  (risk-management, not alpha) since it's independent of
+  signal-arc choices.
+
+  S9-close primary (WP-SIGNAL-MOMENTUM-LONGSHORT-V1)
+  superseded: the cross-sectional momentum refutation
+  delivered a more general result (the canonical formulation
+  also fails) that obviated the original long-only-
+  constraint-vs-signal-mechanic question for momentum.
+  Momentum-LS stays banked as a price-based residual but
+  deprioritised post-pivot.
+
+ENVIRONMENT NOTE
+  Transient node API ECONNREFUSED observed during a
+  T-fire window on 2026-06-04. Network connectivity,
+  Norton-toggle (still OFF per S7), and proxy
+  configuration all verified clean. Resolved on retry
+  with no config change. Diagnostic-first discipline
+  reinforced: temptation to "try something" was resisted
+  in favour of verifying environment first. If recurring,
+  surface for deeper investigation; if isolated, file as
+  transient infra noise.
+
+PROCESS LEARNINGS
+  - Cross-test isolation: two failure modes that share a
+    common pattern across families are more durable
+    findings than any single-family narrative. S9 + S10
+    both isolate short-side directional mismatch as the
+    structural killer; borrow drag is incidental in both.
+  - Canonical academic formulations also fail. The
+    cross-sectional momentum Jegadeesh-Titman result --
+    the strongest prior in the US-equities literature --
+    does not translate to liquid ASX-200 survivors over
+    this bull. Bull-regime-driven cross-sectional flattening
+    AND institutional-arbitrage-driven retail-edge erosion
+    are both candidate hypotheses; neither is conclusion.
+  - Long top-decile sleeve ~= beta. The long leg of a
+    rank-based long-short captures no alpha; the ~36-pt
+    differential vs sum-of-per-ticker B&H is the
+    opportunity cost of selecting 36 of 185 names plus
+    the active loss from shorting the wrong 18.
+  - Strategic pivot decision framework: change ONE
+    variable at a time. After exhausting price signals on
+    a fixed universe, change DATA TYPE first (price ->
+    fundamentals/quality) on the SAME universe, then
+    UNIVERSE second (liquid -> smaller-cap) only if (a)
+    reveals edge. The inverse ordering (universe first)
+    was considered and rejected on this principle.
+  - Defensive overlay framing: risk-management WP, NOT
+    alpha. Pays a cash-drag premium for tail-regime
+    protection; crash backtests on 2021-2026 sample are
+    low-power; bar is regime-independence of protection.
+  - Session-close primary recommendations are ranking
+    guides, not commitments; the orchestrator retains
+    pivot authority based on broader context. S9-close
+    primary (MOMENTUM-LONGSHORT-V1) was superseded mid-S10
+    by the cross-sectional pivot which delivered a
+    broader-implication refutation.
+  - Late-landed-reconcile booking convention now has 2
+    precedents (a63cb38, af791a2); trigger is calendar-
+    date separation, not magnitude of delay.
+  - Transient infra noise (ECONNREFUSED): diagnostic-first
+    discipline pays off; verify environment before trying
+    interventions. Isolated occurrence; no action.
+
+═══════════════════════════════════════════════════════
+SESSION 10 CLOSE — 2026-06-04 AEST
+═══════════════════════════════════════════════════════
+
+SHIPPED (1 substantive + 1 late-landed reconcile + this reconcile):
+  af791a2 — WP-RECONCILE-SESSION-9-CLOSE (T4, late-landed
+            by ~12h; booked per late-landed precedent)
+  7ea4c08 — WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1 (T1;
+            REFUTED; cross-sectional momentum family
+            closed; price-only-on-liquid-ASX thesis CLOSED)
+
+PRODUCTION STATE AT CLOSE:
+  Supabase: 201 stocks, 239,694 prices, 0 signals
+  persisted (unchanged from session-6 close; S7-S10 all
+  backtest-only). Cumulative: 38 commits on master (37
+  through 7ea4c08 + this reconcile; git-authoritative;
+  the S9 drift correction stands).
+  Code: src/backtest/engine.py FROZEN at 3cd4d0b;
+  cross-sectional ranking + monthly-rebal plumbing for
+  7ea4c08 layered on the frozen engine via signal_series
+  ternary (no engine-surface-area changes). signals.py:
+  ma_crossover, mean_reversion_zscore, momentum_absolute_
+  lookback, mean_reversion_zscore_longshort + cross-
+  sectional momentum helpers.
+  Signal-family scorecard: refutation tally 7
+  (qualitatively conclusive). 3 signal families x
+  {long-only, long-short} x {per-ticker timing, cross-
+  sectional ranked} exhausted on liquid ASX-200 over
+  2022-2026 bull. Price-only-on-liquid-ASX thesis CLOSED.
+  Cross-test isolation: short-side directional mismatch
+  is structural; borrow drag immaterial both long-short
+  tests.
+  Environment: Norton HTTPS scanning OFF (S7), clean
+  across all S10 commits. Transient ECONNREFUSED on
+  2026-06-04 resolved on retry with no config change.
+
+HEAD at SESSION 10 close: 7ea4c08 (substantive). This
+reconcile commit (see `git log -1 --oneline`) is the
+documentation close.
+
+TERMINAL STATES AT CLOSE:
+  T1 — idle (closed 7ea4c08 -- cross-sectional momentum
+              REFUTED, family closed, price-only-on-
+              liquid-ASX thesis CLOSED)
+  T2 — idle (not activated this session)
+  T3 — idle (not activated this session)
+  T4 — idle (closed af791a2 late-landed S9 reconcile;
+              closing WP-RECONCILE-SESSION-10-CLOSE)
+  T5 — held / spare (not activated this session)
+
+IMMEDIATE QUEUE (SESSION 11):
+  - Reconcile (this WP) -- mandatory first action,
+    landing now.
+  - WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE (PRIMARY) --
+    gating investigation for the fundamentals/quality
+    arc per the S10 strategic pivot. Read-only Phase A:
+    what fields, what history, what coverage, what
+    provisioning is needed.
+  - WP-INFRA-SUPABASE-NEW-KEY-MIGRATION -- hygiene
+    closeout; pairs naturally with fundamentals
+    provisioning if AlphaVantage/Finnhub keys get
+    provisioned at the same time.
+  - WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT --
+    ~10-line process WP; pairs with a reconcile slot.
+  - WP-OVERLAY-TREND-REGIME-CRASH-SLEEVE -- defensive
+    sleeve; can run in parallel with the fundamentals
+    arc (independent code path; risk-management not
+    signal-generation).
+  - Stretch: WP-SIGNAL-MOMENTUM-XSEC-QUINTILE-V1
+    (breadth robustness on cross-sectional momentum;
+    low prior given the cross-test finding).
