@@ -205,34 +205,6 @@ WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT
   thematic-ordering convention locked at S8). Process WP; pairs
   naturally with a reconcile slot as session-N warm-up.
 
-WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE
-  PROMOTED TO PRIMARY for session 11 per S10 strategic pivot.
-  Gating WP for the fundamentals/quality arc. Phase A read-only:
-  what fundamental fields are reliably sourceable for ASX via
-  yfinance (Ticker.info, Ticker.financials), Finnhub (free tier),
-  AlphaVantage (free tier); history depth (point-in-time vs
-  latest-snapshot; restatement handling); coverage of the
-  current 185-survivor universe (some ASX 200 names may have
-  thin fundamentals coverage from US-centric providers).
-  Finnhub + AlphaVantage keys still present-but-empty
-  placeholders in .env -- provisioning may be a precondition.
-  Outcomes lock the spec for WP-SIGNAL-QUALITY-VALUE-XSEC-V1.
-  Read-only investigation; no Phase B until data-source
-  feasibility is fully characterised.
-
-WP-SIGNAL-QUALITY-VALUE-XSEC-V1
-  Quality/value cross-sectional signal on the current liquid
-  universe (185 ASX 200 survivors). Composite ranking on a small
-  basket of fundamental ratios (e.g. low P/E + high ROE + low
-  debt/equity, or earnings yield + revenue growth). Monthly or
-  quarterly rebalance (low-turnover by design -- fundamentals
-  change slowly). Long top-decile / short bottom-decile via
-  frozen engine + borrow tiering (or long-only if S10 short-leg
-  finding suggests dropping the short for this signal type).
-  Tests whether out-of-data-type pivot (fundamentals vs price)
-  finds edge that price-based signals could not. GATED on
-  WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE.
-
 WP-OVERLAY-TREND-REGIME-CRASH-SLEEVE
   Always-on ^AXJO 200-DMA trend overlay as a defensive sleeve.
   Insurance-with-premium framing: pays the cash-drag premium
@@ -257,6 +229,56 @@ WP-SIGNAL-MOMENTUM-XSEC-QUINTILE-V1
   is structural in this regime/universe) suggests breadth
   won't rescue. Fire only if a specific reason to revisit
   cross-sectional momentum emerges.
+
+WP-DATA-SMALLCAP-FEASIBILITY-PROBE
+  PROMOTED TO PRIMARY for session 12 per the S11 through-line
+  (both price + fundamentals levers died on liquid ASX-200 ->
+  the universe is the candidate killer; out-of-universe is the
+  next alpha lever). Gating Phase A read-only investigation
+  for smaller-cap / less-liquid ASX. Make-or-break:
+  - Realistic thin-ADV slippage model. Slippage scales with
+    order-size / ADV. On thinly-traded names, slippage can
+    dominate signal returns; without a realistic model the
+    backtest is fantasy. Need to characterise the slippage
+    function before any signal fires.
+  - Survivorship + delisting audit with point-in-time index
+    membership. Smallcap universes churn far more than the
+    ASX 200; without PIT membership the backtest is survivor-
+    biased (only sees names that survived to today, missing
+    delistings that would have hurt the strategy).
+  - Data-coverage characterisation for ex-200 names. yfinance
+    coverage thins below the ASX 200; gaps, missing volumes,
+    and delisted-name handling all need explicit treatment.
+  Universe definition itself is open: ASX 300 ex-200, micro-
+  cap-only, specific index, or a custom market-cap cut. To be
+  decided in chat / via the probe's findings. NO signal until
+  slippage reality is locked.
+
+WP-INFRA-CLAUDEMD-FACTOR-METHODOLOGY-AMENDMENT
+  Codify factor-research methodology principles into CLAUDE.md
+  Rules block as thematic bullets:
+  (c) Screen-before-backtest for low-data-density factor
+      families: run a cheap descriptive IC / quantile screen
+      before building a full backtest. Locked S11 close after
+      the QV IC screen ruled out the fundamentals quality/
+      value family on liquid ASX-200 at a fraction of the
+      full-backtest build cost. General principle for any
+      factor family where data density is low (fundamentals,
+      alternative data, low-frequency event signals).
+  (L3) NEVER impute look-ahead values. Drop ratios when
+      shares-outstanding or any required component is missing
+      rather than infer from later periods or external sources;
+      imputation contaminates the PIT signal. Discipline:
+      "no signal beats fake signal." Locked S11 close as the
+      L3 limitation in the fundamentals pipeline; the
+      principle generalises to any PIT-sensitive signal.
+  Conventions (a) / (b) [fundamentals PIT specifics --
+  report_date_proxy = 60th ^AXJO trading bar at/after period_
+  end; statement-panel reconstruction never .info] are NOT
+  included in this amendment -- too implementation-specific to
+  the fundamentals pipeline; they live as LOCKED DECISIONS in
+  _project_state.md.
+  ~10-15 line amendment.
 
 ═══════════════════════════════════════════════════════
 RETIRED (closed this session)
@@ -356,6 +378,43 @@ WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1
                                       only-on-liquid-ASX thesis CLOSED;
                                       triggered S10 strategic pivot to
                                       fundamentals/quality)
+WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE
+                                    — closed S11 (no code commit;
+                                      booked under WP-RECONCILE-
+                                      SESSION-11-CLOSE in _build_log.md;
+                                      T1 read-only; PIT pipeline
+                                      feasibility ESTABLISHED for free
+                                      yfinance path; statement-panel
+                                      ratio reconstruction +
+                                      report_date_proxy = 60th ^AXJO
+                                      trading bar at/after period_end;
+                                      knowable-as-of gate; no
+                                      persistence built; conventions
+                                      (a)/(b) locked)
+WP-SIGNAL-QUALITY-VALUE-IC-SCREEN
+                                    — closed S11 (no code commit;
+                                      booked under WP-RECONCILE-
+                                      SESSION-11-CLOSE in _build_log.md;
+                                      T1 read-only, NEGATIVE
+                                      DESCRIPTIVE FEASIBILITY SCREEN;
+                                      Quality mean 12m IC -0.028 NS,
+                                      Value -0.093 NW t -2.08 anti-
+                                      predictive, Composite inherits
+                                      Value; Q5-Q1 12m spreads
+                                      -25/-35/-39 pct; fundamentals-
+                                      on-liquid-ASX descriptively
+                                      closed; backtested-refutation
+                                      tally unchanged at 8 [descriptive
+                                      screen explicitly NOT counted])
+WP-SIGNAL-QUALITY-VALUE-XSEC-V1
+                                    — CLOSED DEFERRED S11 (superseded
+                                      by negative WP-SIGNAL-QUALITY-
+                                      VALUE-IC-SCREEN finding; full
+                                      backtest would not invert the
+                                      sign; refinement via paid
+                                      Finnhub also not justified; no
+                                      commit; no code artifact
+                                      attempted)
 
 ═══════════════════════════════════════════════════════
 NOTES / CALIBRATION
@@ -750,3 +809,81 @@ Process learnings (SESSION 10):
   in favour of verifying environment first; retry succeeded
   with no intervention. If recurring, surface for deeper
   investigation; if isolated, file as transient infra noise.
+
+Limitations (SESSION 11) — fundamentals pipeline:
+- L1 oldest-period thinning: yfinance fundamentals expose
+  ~3-4 usable annual periods per ticker on this universe; the
+  earliest annual periods are often empty or partial for ASX
+  names. Constrains the rolling-window IC framework to short
+  histories and reduces the cycle-coverage of any factor
+  test built on this data source. Mitigation: characterise
+  coverage per ticker before signal construction; drop
+  tickers below a minimum-usable-periods threshold.
+- L2 REIT/trust key-map: no systematic gap found this run --
+  REIT/trust fundamentals reported under the same yfinance
+  field names as standard equity for the names checked. Minor
+  watch at scale: if the smallcap probe exposes more REIT/
+  trust coverage (e.g. via ASX 300 ex-200 which contains more
+  trust structures), formalise a key-map fallback. Not
+  blocking on the liquid ASX-200 segment.
+- L3 NEVER impute look-ahead values: drop E/P + B/P when
+  Ordinary Shares Number is missing for that period; do NOT
+  infer from later periods or external sources. Imputation
+  contaminates the PIT signal -- the discipline is "no
+  signal beats fake signal." Flagged as CLAUDE.md candidate
+  via WP-INFRA-CLAUDEMD-FACTOR-METHODOLOGY-AMENDMENT; the
+  principle generalises beyond fundamentals to any PIT-
+  sensitive signal.
+
+Process learnings (SESSION 11):
+- Screen-before-backtest validated as methodology. The cheap
+  descriptive IC/quantile screen ruled out the QV factor
+  family at a fraction of the cost of building the full
+  WP-SIGNAL-QUALITY-VALUE-XSEC-V1 backtest. Convention (c)
+  locked; CLAUDE.md amendment banked. General principle:
+  for any low-data-density factor family, screen before
+  build -- avoids investing in plumbing for a signal that
+  doesn't fire.
+- THROUGH-LINE: cross-axis refutation strengthens the
+  universe hypothesis. Price-only lever (8 backtested
+  refutations) AND fundamentals quality/value lever (1
+  negative descriptive screen) both died on the SAME liquid
+  ASX-200-survivor universe. The common variable is the
+  universe; the candidate killer is market efficiency /
+  liquidity / institutional arbitrage. This isn't proof
+  (we haven't tested fundamentals long enough to call it
+  structural), but it's strong directional evidence to
+  pivot OUT-OF-UNIVERSE next.
+- Descriptive close vs structural refutation -- be honest
+  about which one you've earned. The S11 IC screen is a
+  DESCRIPTIVE close (one cycle, free data, one factor
+  family) -- sufficient to deprioritize hard, NOT
+  sufficient to permanently close the door. The 8
+  backtested price refutations across multiple cycles +
+  formulations are closer to structural. Don't conflate the
+  two when reporting; the calibration honesty matters for
+  future revisits.
+- Tally hygiene: descriptive screens are NOT backtested
+  refutations and must not increment the backtested-
+  refutation tally. The S11 IC screen stays out of the
+  count (which is 8); counting it would misrepresent the
+  metric. The tally measures backtest-grade evidence; the
+  screen is a methodology tool that pre-empts backtests.
+- Paid-data-not-justified-when-cheap-data-rules-out-the-
+  signal. The negative IC screen on free yfinance fundamentals
+  removes the case for provisioning paid Finnhub -- the
+  refinement would not invert a negative sign. Save the
+  provisioning cost for when there's a positive signal that
+  refinement could materially improve.
+- On-schedule reconcile convention reaffirmed. S11 substantive
+  work + S11 reconcile on the same calendar day (2026-06-04);
+  the reconcile is the closer parenthetical in _build_log.md
+  + _timeline.md, NOT a standalone SHA-date entry. Late-
+  landed-reconcile convention (a63cb38, af791a2) remains the
+  exception triggered by calendar-date separation.
+- L3 + convention (c) are the bundle for the CLAUDE.md
+  methodology amendment. (a) + (b) stay as LOCKED DECISIONS
+  in _project_state.md because they're implementation-
+  specific to the fundamentals pipeline; (c) + L3 are
+  general factor-research / PIT principles worth elevating
+  to working-model documentation.

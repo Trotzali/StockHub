@@ -243,30 +243,109 @@ LOCKED DECISIONS
   parenthetical-only convention. The trigger is calendar-date
   separation from the substantive commits of the closing
   session, not the magnitude of the delay.
+- Tally arithmetic correction (carried from S10): backtested-
+  refutation count was mis-recorded as 7 in 7ea4c08 / 401a4f0;
+  correct count is 8. The 8 = 6 long-only (MA crossover V1
+  00e2141, V2 8782a6a, V3 bfaa817; MR z-score V1 bfbae14, V2
+  c823e20; momentum absolute-lookback V1 80f9993) + 2 long-
+  short (MR z-score LS V1 cc2e4c6; momentum cross-sectional LS
+  V1 7ea4c08). History not rewritten -- the "tally 7" S10
+  entries stand as historical record at write-time; this entry
+  supersedes for current count. Concerns price-based backtested
+  refutations ONLY; independent of the S11 IC screen.
+- WP-SIGNAL-QUALITY-VALUE-IC-SCREEN (S11, NEGATIVE) is a
+  descriptive feasibility screen, deliberately NOT counted in
+  the backtested-refutation tally (which stays at 8). Counting
+  a descriptive screen as a backtest refutation would
+  misrepresent the metric -- the screen is a methodology tool
+  for pre-empting backtests, not a substitute for one. Its
+  value was pre-empting a full WP-SIGNAL-QUALITY-VALUE-XSEC-V1
+  backtest (now CLOSED DEFERRED).
+- STRATEGIC CONCLUSION (S11 close): fundamentals quality/value
+  on liquid ASX-200 (free yfinance) shows NO exploitable pulse
+  this cycle. Paid Finnhub provisioning NOT justified -- the
+  refinement won't invert a negative sign; paying for cleaner
+  data on a signal that doesn't fire pays twice for nothing.
+  Fundamentals-on-liquid-ASX lever closed DESCRIPTIVELY (one
+  cycle, free data, one factor family); not a multi-cycle
+  structural refutation. Sufficient to deprioritize hard;
+  revisit only if the smallcap probe shows life on a different
+  factor family.
+- THROUGH-LINE (S11 close): both the price-only lever (8
+  backtested refutations) AND the fundamentals quality/value
+  lever (1 negative descriptive screen) died on the SAME
+  liquid ASX-200-survivor universe. The common variable is the
+  universe. Market efficiency / liquidity / institutional
+  arbitrage on the ASX-200-survivor segment is the candidate
+  killer. Next alpha lever = OUT-OF-UNIVERSE (smaller-cap /
+  less-liquid ASX). Banked WP-DATA-SMALLCAP-FEASIBILITY-PROBE
+  as S12 primary. Make-or-break = realistic thin-ADV slippage
+  model + survivorship/delisting audit + data-coverage
+  characterisation for ex-200 names. NO signal until slippage
+  reality is known.
+- Convention (a) [fundamentals PIT, S11]: report_date_proxy =
+  the 60th ^AXJO trading bar at-or-after period_end. Tunable
+  per asset class; 60 bars (~3 months) is the ASX-statement-
+  lag conservative default; avoids look-ahead. Implementation-
+  specific to the fundamentals pipeline; not a CLAUDE.md
+  amendment candidate.
+- Convention (b) [fundamentals PIT, S11]: reconstruct ratios
+  from the statement panel (annual / quarterly DataFrames of
+  components), NEVER Ticker.info (latest-snapshot, look-ahead
+  contaminated). Implementation-specific to the fundamentals
+  pipeline; not a CLAUDE.md amendment candidate.
+- Convention (c) [factor-research methodology, S11]: run a
+  cheap descriptive IC / quantile SCREEN before building a
+  full backtest for any low-data-density factor family.
+  Locked S11 close after the IC screen ruled out the QV factor
+  family on this universe at fraction of the build cost.
+  General-enough methodology principle for CLAUDE.md; banked
+  WP-INFRA-CLAUDEMD-FACTOR-METHODOLOGY-AMENDMENT to codify
+  alongside L3 (never-impute-look-ahead).
 
 ═══════════════════════════════════════════════════════
 CURRENT WP
 ═══════════════════════════════════════════════════════
-(between WPs — SESSION 10 closed. Cross-sectional momentum long-
-short REFUTED (7ea4c08, TEST net alpha vs ^AXJO -8.71%, ^AXJO
-+6.65% vs L/S net -2.05%). Short leg the killer (-8.93% vs long
-+6.87% ~= beta); borrow drag immaterial (+0.94%). Cross-test
-finding: BOTH long-short tests (MR-LS cc2e4c6, momentum-XSEC-LS
-7ea4c08) died on the short leg in a rising market, isolating short-
-side directional mismatch as the structural problem. CONCLUSION:
-no simple price-based edge on liquid ASX-200 survivors over the
-multi-year bull -- price-only-on-liquid-ASX thesis CLOSED; cross-
-sectional momentum family closed; refutation tally 7 (qualitatively
-conclusive). STRATEGIC PIVOT: out-of-data-type fundamentals/quality
-FIRST on current universe (isolate signal-type variable), out-of-
-universe smaller-cap SECOND, plus defensive trend-overlay sleeve.
-The S9-close primary (WP-SIGNAL-MOMENTUM-LONGSHORT-V1) was
-superseded mid-session by the orchestrator's pivot to cross-
-sectional momentum, which delivered the broader-implication
-refutation that obviated the original constraint-axis question.
-SESSION 11 opens with WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE as
-primary (gating for the fundamentals/quality arc). See "Immediate
-queue — session 11" below.)
+(between WPs — SESSION 11 closed; on-schedule reconcile. Zero
+substantive code commits; pure research session. Two read-only
+WPs done and booked under WP-RECONCILE-SESSION-11-CLOSE in
+_build_log.md: (1) WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE
+established PIT pipeline feasibility for the free-yfinance path
+(statement-panel ratio reconstruction; report_date_proxy = 60th
+^AXJO trading bar at/after period_end; knowable-as-of gate; no
+imputation -- conventions (a)/(b) locked); (2) WP-SIGNAL-QUALITY-
+VALUE-IC-SCREEN delivered NEGATIVE descriptive finding (Quality
+mean 12m IC -0.028 NS, Value -0.093 NW t -2.08 anti-predictive,
+Composite inherits Value; Q5-Q1 12m spreads -25/-35/-39 pct). The
+IC screen pre-empted a full WP-SIGNAL-QUALITY-VALUE-XSEC-V1
+backtest (now CLOSED DEFERRED) and locked convention (c) [screen-
+before-backtest for low-data-density factor families].
+
+Tally arithmetic correction (carried from S10 mis-record): the
+backtested-refutation count is 8, not 7 (6 long-only + 2 long-
+short; see new LOCKED DECISION). The S11 IC screen is a negative
+descriptive feasibility test, NOT a backtest -- explicitly NOT
+counted in the tally.
+
+THROUGH-LINE: both the price-only lever (8 backtested refutations)
+AND the fundamentals quality/value lever (1 negative descriptive
+screen) died on the SAME liquid ASX-200-survivor universe. Market
+efficiency / liquidity / institutional arbitrage on the segment is
+the candidate killer. Next alpha lever = OUT-OF-UNIVERSE.
+
+Fundamentals-on-liquid-ASX closed DESCRIPTIVELY (one cycle, free
+data, one factor family); not a multi-cycle structural refutation.
+Paid Finnhub provisioning deprioritized -- refinement won't invert
+a negative sign. Alternative fundamentals factor families
+(accruals / asset-growth / profitability-stability) deprioritized
+on liquid-ASX -- low prior post-screen; revisit only if smallcap
+probe finds life on a different family.
+
+SESSION 12 opens with WP-DATA-SMALLCAP-FEASIBILITY-PROBE as
+primary (gating for the out-of-universe arc; make-or-break =
+realistic thin-ADV slippage model + survivorship/delisting audit
++ data-coverage characterisation). See "Immediate queue —
+session 12" below.)
 
 Closed in SESSION 1:
   WP-BOOTSTRAP-REPO-INIT              — 73b2c8d
@@ -433,7 +512,43 @@ Closed in SESSION 10 (2026-06-04):
                                                   momentum family closed;
                                                   price-only-on-liquid-
                                                   ASX thesis CLOSED)
-  WP-RECONCILE-SESSION-10-CLOSE       — (see `git log -1 --oneline`)
+  WP-RECONCILE-SESSION-10-CLOSE       — 401a4f0
+
+Closed in SESSION 11 (2026-06-04; on-schedule reconcile):
+  WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE
+                                      — (no code commit) — T1, read-only;
+                                        PIT fundamentals pipeline
+                                        feasibility ESTABLISHED for free
+                                        yfinance path; statement-panel
+                                        ratio reconstruction +
+                                        report_date_proxy = 60th ^AXJO
+                                        trading bar at/after period_end;
+                                        knowable-as-of gate; no
+                                        persistence built; conventions
+                                        (a)/(b) locked. Booked under
+                                        WP-RECONCILE-SESSION-11-CLOSE in
+                                        _build_log.md.
+  WP-SIGNAL-QUALITY-VALUE-IC-SCREEN
+                                      — (no code commit) — T1, read-only,
+                                        NEGATIVE descriptive screen; mean
+                                        12m IC Quality -0.028 (NS), Value
+                                        -0.093 (NW t -2.08), Composite
+                                        inherits Value; Q5-Q1 12m spreads
+                                        -25/-35/-39 pct; fundamentals-on-
+                                        liquid-ASX descriptively closed;
+                                        backtested-refutation tally
+                                        unchanged at 8 (descriptive
+                                        screen explicitly NOT counted).
+                                        Booked under WP-RECONCILE-
+                                        SESSION-11-CLOSE in _build_log.md.
+  Investigated, deferred (no commits, superseded):
+  WP-SIGNAL-QUALITY-VALUE-XSEC-V1     — CLOSED DEFERRED (T1; superseded
+                                        by negative WP-SIGNAL-QUALITY-
+                                        VALUE-IC-SCREEN finding -- full
+                                        backtest would not invert the
+                                        sign; refinement via paid
+                                        Finnhub also not justified)
+  WP-RECONCILE-SESSION-11-CLOSE       — (see `git log -1 --oneline`)
 
 See _build_log.md for commit details.
 
@@ -469,7 +584,12 @@ also fails on this universe). Long-short variant of per-ticker
 momentum (WP-SIGNAL-MOMENTUM-LONGSHORT-V1) was the S9-close primary
 recommendation but was superseded mid-S10 by the orchestrator's
 pivot to cross-sectional momentum; it remains banked, deprioritised
-post-strategic-pivot.
+post-strategic-pivot. Fundamentals quality/value on liquid ASX-200
+closed DESCRIPTIVELY (S11; one negative IC screen rather than full
+backtest; not counted in backtested-refutation tally but contributes
+to the through-line); paid Finnhub provisioning + fundamentals
+alternative factor families (accruals, asset-growth, profitability-
+stability) deprioritised hard on this universe.
 
 Engine: FROZEN at 3cd4d0b. Long-short capable; regression-clean
 across all 6 prior long-only callers (aggregate delta 0; byte-
@@ -484,47 +604,57 @@ cross-sectional momentum ranking helpers (7ea4c08). borrow_tiering.py
 (S10) reused the frozen engine via signal_series ternary; no engine-
 surface-area changes since 3cd4d0b.
 
-Production state at session-10 close: 38 commits on master (37
-through 7ea4c08 + this reconcile; git-authoritative; the S9 drift
-correction stands). 201 stocks, 239,694 prices, 0 signals persisted
-(signals computed in-backtest, never written to DB). No data
-ingestion this session -- stocks / prices unchanged from session-6
-close. Per-ticker coverage unchanged: 200 ASX 200 constituents +
-^AXJO benchmark. Orphan/short-history tickers unchanged (XYX banked
-WP-DATA-XYX-RECOVER; 7 zero-row tickers banked
-WP-DATA-ASX200-ORPHANS-V2). ^AXJO sits in stocks table (cosmetic
-mismatch; refactor banked WP-DB-BENCHMARKS-TABLE).
+Production state at session-11 close: 39 commits on master (38
+through 401a4f0 + this reconcile; git-authoritative). 201 stocks,
+239,694 prices, 0 signals persisted (signals computed in-backtest,
+never written to DB). No data ingestion S7-S11 -- stocks / prices
+unchanged from session-6 close. Per-ticker coverage unchanged: 200
+ASX 200 constituents + ^AXJO benchmark. Orphan/short-history
+tickers unchanged (XYX banked WP-DATA-XYX-RECOVER; 7 zero-row
+tickers banked WP-DATA-ASX200-ORPHANS-V2). ^AXJO sits in stocks
+table (cosmetic mismatch; refactor banked WP-DB-BENCHMARKS-TABLE).
+S11 added no code artifacts -- the fundamentals pipeline was
+validated in-memory only, no .py module shipped, no Supabase
+schema additions.
 
-Signal-family scorecard (post-S10): refutation tally 7 -- count
-unchanged from S9 but qualitatively conclusive. 3 signal families
-(MA crossover, MR z-score, momentum) x {long-only, long-short} x
-{per-ticker timing, cross-sectional ranked} exhausted on the liquid
-ASX-200 survivor universe over the 2022-2026 bull window. No simple
-price-based edge beats holding the universe. Cross-test isolation
-(S9 + S10): short-side selection structurally loss-making in this
-regime/universe; borrow drag immaterial (~3.6 pts on MR-LS, ~0.94
-pts on momentum-XSEC-LS); the binding problem is short-leg
-directional mismatch. Price-only-on-liquid-ASX thesis CLOSED
-(negative).
+Signal-family scorecard (post-S11): backtested-refutation tally 8
+(6 long-only + 2 long-short; corrected from S10 mis-record of 7).
+3 price-signal families (MA crossover, MR z-score, momentum) x
+{long-only, long-short} x {per-ticker timing, cross-sectional
+ranked} exhausted on the liquid ASX-200 survivor universe over the
+2022-2026 bull window. Cross-test isolation (S9 + S10): short-side
+selection structurally loss-making in this regime/universe; borrow
+drag immaterial (~3.6 pts on MR-LS, ~0.94 pts on momentum-XSEC-LS);
+the binding problem is short-leg directional mismatch. Plus 1
+NEGATIVE descriptive feasibility screen on fundamentals quality/
+value (S11 IC screen; explicitly NOT in the backtested tally but
+contributing to the through-line). Price-only-on-liquid-ASX thesis
+CLOSED (negative). Fundamentals-on-liquid-ASX lever closed
+DESCRIPTIVELY (deprioritized hard; not multi-cycle structural
+proof).
 
-STRATEGIC PIVOT (S10 close): out-of-data-type fundamentals/quality
-FIRST on current liquid universe (isolate signal-type variable),
-out-of-universe smaller-cap SECOND (one variable at a time), plus
-defensive trend-overlay sleeve in parallel (risk-management, not
-alpha). Banked structural-MR pivots (WP-SIGNAL-MR-CROSSSECTIONAL-V1
-+ WP-SIGNAL-MR-REGIME-CONDITIONAL) remain on the bench as price-
-based residuals; the strategic pivot deprioritises them relative to
-the fundamentals/quality arc.
+STRATEGIC PIVOT (now at S11 close): the S10 pivot ("out-of-data-
+type fundamentals first, out-of-universe smallcap second") fired
+its first leg and ruled it out cheaply via descriptive screen.
+Pivot now collapses to OUT-OF-UNIVERSE (smaller-cap / less-liquid
+ASX) as the next alpha lever. THROUGH-LINE: both levers (price +
+fundamentals) died on the SAME liquid universe -> the universe is
+the candidate killer (market efficiency / liquidity / institutional
+arbitrage). Smallcap probe is the falsification test. Banked
+structural-MR pivots (WP-SIGNAL-MR-CROSSSECTIONAL-V1 +
+WP-SIGNAL-MR-REGIME-CONDITIONAL) remain on the bench as price-
+based residuals; the through-line further deprioritises them on
+this universe but they may be revisited on smallcap if smallcap
+shows life.
 
 Environment: Norton AV HTTPS scanning OFF (S7), verified clean
-across all S8/S9/S10 commits. Supabase legacy HS256-signed JWT
-in-place rotation EOL'd (S8 finding); WP-INFRA-SUPABASE-NEW-KEY-
-MIGRATION still open. .commit-msg.tmp gitignored (85da176); long-
-body commit pattern uses direct-write to .commit-msg.tmp.
-Transient node API ECONNREFUSED observed during a T-fire window
-on 2026-06-04; network / Norton-toggle / proxy all verified clean;
-resolved on retry; no config change. See ENVIRONMENT NOTES items
-14-15 (Norton + Supabase JWT).
+across all S8/S9/S10 commits and the S11 research session.
+Supabase legacy HS256-signed JWT in-place rotation EOL'd (S8
+finding); WP-INFRA-SUPABASE-NEW-KEY-MIGRATION still open.
+.commit-msg.tmp gitignored (85da176); long-body commit pattern
+uses direct-write to .commit-msg.tmp. The S10-window transient
+node API ECONNREFUSED did not recur in S11. See ENVIRONMENT NOTES
+items 14-15 (Norton + Supabase JWT).
 
 UI shell remains gated on WP-UI-FRONTEND-STACK-ARM64-RESOLUTION.
 
@@ -598,38 +728,7 @@ strategic pivot):
                                     ~10-line amendment. Process WP;
                                     not affected by strategic pivot.
 
-Banked WPs (session 10 outcomes):
-  WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE
-                                  — PROMOTED TO PRIMARY for session 11.
-                                    Gating WP for the fundamentals/
-                                    quality arc. What fundamental fields
-                                    are reliably sourceable for ASX via
-                                    yfinance / Finnhub / AlphaVantage
-                                    (P/E, P/B, ROE, debt/equity,
-                                    earnings yield, revenue growth,
-                                    etc.); history depth (point-in-time
-                                    vs latest-snapshot; restatement
-                                    handling); coverage of the current
-                                    185-survivor universe. Finnhub +
-                                    AlphaVantage keys still present-
-                                    but-empty placeholders in .env --
-                                    provisioning needed. Read-only
-                                    investigation only; no Phase B
-                                    until data-source feasibility is
-                                    locked.
-  WP-SIGNAL-QUALITY-VALUE-XSEC-V1 — quality/value cross-sectional
-                                    signal on the current liquid
-                                    universe (185 ASX 200 survivors).
-                                    Composite ranking on a small basket
-                                    of fundamental ratios (e.g. low
-                                    P/E + high ROE + low debt/equity).
-                                    Monthly or quarterly rebal; long
-                                    top-decile, short bottom-decile (or
-                                    long-only if SUPABASE-NEW-KEY-
-                                    MIGRATION exposes constraint
-                                    issues). GATED on
-                                    WP-DATA-FUNDAMENTALS-FEASIBILITY-
-                                    PROBE.
+Banked WPs (session 10 outcomes, still open):
   WP-OVERLAY-TREND-REGIME-CRASH-SLEEVE
                                   — always-on ^AXJO 200-DMA trend
                                     overlay; insurance-with-premium
@@ -658,26 +757,70 @@ Banked WPs (session 10 outcomes):
                                     mismatch is structural) suggests
                                     breadth won't rescue.
 
-Immediate queue — session 11:
+Banked WPs (session 11 outcomes):
+  WP-DATA-SMALLCAP-FEASIBILITY-PROBE
+                                  — PROMOTED TO PRIMARY for session 12.
+                                    Out-of-universe pivot per the S11
+                                    through-line (both price + funda-
+                                    mentals levers died on liquid ASX-
+                                    200; the universe is the candidate
+                                    killer). Gating Phase A read-only
+                                    investigation for smaller-cap / less-
+                                    liquid ASX. Make-or-break = (1)
+                                    realistic thin-ADV slippage model
+                                    (the dominant cost on illiquid
+                                    names); (2) survivorship/delisting
+                                    audit + point-in-time index
+                                    membership (smallcap universes
+                                    churn far more than ASX 200; without
+                                    PIT membership the backtest is
+                                    survivor-biased); (3) data-coverage
+                                    characterisation for ex-200 names
+                                    (yfinance coverage thins below
+                                    ASX 200; gaps + delisted-name
+                                    handling required). NO signal until
+                                    slippage reality is known.
+  WP-INFRA-CLAUDEMD-FACTOR-METHODOLOGY-AMENDMENT
+                                  — codify factor-research methodology
+                                    into CLAUDE.md: (c) screen-before-
+                                    backtest for low-data-density factor
+                                    families (run a cheap descriptive
+                                    IC/quantile screen before building
+                                    a full backtest -- locked S11
+                                    close); L3 never-impute-look-ahead
+                                    (drop ratios when shares-outstanding
+                                    missing rather than infer -- locked
+                                    S11 close as L3 limitation).
+                                    Conventions (a)/(b) NOT included
+                                    (too implementation-specific to
+                                    fundamentals pipeline). ~10-15-line
+                                    amendment as thematic bullets in
+                                    CLAUDE.md Rules block.
+
+Immediate queue — session 12:
 
   - Reconcile (this WP) -- mandatory first action, landing now.
-  - WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE (PRIMARY) -- gating
-    investigation for the fundamentals/quality arc. Phase A
-    read-only: what fields, what history, what coverage, what
-    provisioning is needed. Outcomes will lock the spec for
-    WP-SIGNAL-QUALITY-VALUE-XSEC-V1.
+  - WP-DATA-SMALLCAP-FEASIBILITY-PROBE (PRIMARY) -- gating out-
+    of-universe investigation per the S11 through-line. Phase A
+    read-only: universe definition (ASX 300 ex-200? micro-caps?
+    specific index?); ADV / thin-liquidity slippage modelling;
+    survivorship + delisting audit with point-in-time index
+    membership; data coverage gaps; delisted-name handling. NO
+    signal until slippage reality is locked.
   - WP-INFRA-SUPABASE-NEW-KEY-MIGRATION -- hygiene closeout;
-    pairs well with the fundamentals provisioning if
-    AlphaVantage/Finnhub get keys provisioned at the same time.
+    decoupled from fundamentals provisioning (the latter was
+    deprioritised at S11 close).
   - WP-INFRA-CLAUDEMD-CONCURRENT-PUSH-AMENDMENT -- ~10-line
-    process WP; pairs naturally with a reconcile slot or any
-    quick warm-up slot.
+    process WP; pairs with a reconcile or warm-up slot.
+  - WP-INFRA-CLAUDEMD-FACTOR-METHODOLOGY-AMENDMENT --
+    ~10-15-line process WP; locks convention (c) + L3 in
+    CLAUDE.md.
   - WP-OVERLAY-TREND-REGIME-CRASH-SLEEVE -- defensive sleeve;
-    can run in parallel with the fundamentals arc since it's
-    risk-management not signal-generation; reuses existing
-    regime_above_ma helper.
+    can run in parallel with the smallcap arc (independent
+    code path; risk-management not signal-generation).
   - Stretch: WP-SIGNAL-MOMENTUM-XSEC-QUINTILE-V1 (breadth
-    robustness on cross-sectional momentum; low prior).
+    robustness on cross-sectional momentum; low prior post
+    cross-test finding).
 
 Signal design (Phase 2, months 2-4):
   WP-SIGNAL-HYPOTHESIS-V1       — one clear hypothesis (leaning earnings surprise + RSI<40 + above 200MA)
@@ -697,15 +840,15 @@ Paper / live (Phases 4-5, months 6-12):
 ═══════════════════════════════════════════════════════
 TERMINAL MAP (current session)
 ═══════════════════════════════════════════════════════
-All 5 terminals idle post-session-10 close.
-T1 — idle (closed 7ea4c08 WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1
-            -- REFUTED; cross-sectional momentum family closed;
-            price-only-on-liquid-ASX thesis CLOSED)
-T2 — idle (not activated this session; closed S9's cc2e4c6 and
-            3cd4d0b)
-T3 — idle (not activated this session; closed S9's cfc0e06)
-T4 — idle (closed af791a2 WP-RECONCILE-SESSION-9-CLOSE late-
-            landed; closing WP-RECONCILE-SESSION-10-CLOSE)
+All 5 terminals idle post-session-11 close (on-schedule).
+T1 — idle (closed two research-only WPs --
+            WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE feasibility
+            ESTABLISHED; WP-SIGNAL-QUALITY-VALUE-IC-SCREEN
+            NEGATIVE descriptive; both booked under this
+            reconcile in _build_log.md)
+T2 — idle (not activated this session)
+T3 — idle (not activated this session)
+T4 — idle (closing WP-RECONCILE-SESSION-11-CLOSE)
 T5 — held / spare (not activated this session)
 
 ═══════════════════════════════════════════════════════

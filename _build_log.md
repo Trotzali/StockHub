@@ -841,3 +841,145 @@ af791a2 — 2026-06-04 — WP-RECONCILE-SESSION-9-CLOSE (T4, late-landed)
   Gates: af791a2.
 
   (Reconcile commits not logged per established convention.)
+
+═══════════════════════════════════════════════════════
+SESSION 11 — 2026-06-04
+═══════════════════════════════════════════════════════
+
+(No substantive code commits this session; the two research
+WPs below are booked under WP-RECONCILE-SESSION-11-CLOSE per
+spec request -- read-only investigation only, no engine /
+signals.py / borrow_tiering.py / validation harness touched.)
+
+(no-code) — 2026-06-04 — WP-DATA-FUNDAMENTALS-FEASIBILITY-PROBE (T1, research-only)
+  Banked at S10 close as the gating investigation for the
+  fundamentals/quality arc per the S10 strategic pivot.
+  Phase A + B both READ-ONLY: no code artifact persisted,
+  no Supabase writes, no new scripts shipped.
+
+  Validated in-memory PIT (point-in-time) fundamentals
+  pipeline pattern on the current 185-survivor ASX 200
+  universe:
+  - Statement-panel ratio reconstruction (never
+    Ticker.info, which is latest-snapshot and look-ahead
+    contaminated). Pull annual / quarterly statements;
+    build per-period DataFrame of components (net income,
+    equity, revenue, total debt, ordinary shares
+    outstanding, FCF, total assets, closing price at
+    report-date proxy); compute ratios point-in-time
+    (E/P, B/P, ROE, profit_margin, FCF/total-assets,
+    FCF-yield, debt/equity).
+  - report_date_proxy = the 60th ^AXJO trading bar at-or-
+    after period_end. Tunable per asset class; 60 bars
+    (~3 calendar months) is a conservative ASX-statement-
+    lag default that avoids look-ahead.
+  - knowable-as-of gate enforced: each ratio is timestamped
+    by report_date_proxy and is only consumable in
+    downstream signals from t = report_date_proxy + 1
+    forward. No imputation for missing components --
+    drop E/P + B/P when Ordinary Shares Number missing
+    (L3 limitation; NEVER impute, that's look-ahead).
+  - Coverage characterisation per ticker: usable annual
+    periods, gaps, missing-component patterns (see
+    L1/L2/L3 limitations banked in _ideas.md).
+
+  No persistence built (no Supabase tables, no .py module
+  shipped). Pipeline lives as exploratory notebook /
+  scratch only. Pattern is locked in conventions (a)/(b)
+  in _project_state.md LOCKED DECISIONS for any future
+  build-out (e.g. if the smallcap probe finds life and a
+  fundamentals signal becomes warranted on that universe).
+
+  Outcome: feasibility ESTABLISHED for the free-yfinance
+  path. Pipeline is implementable. Whether the SIGNAL on
+  top of the pipeline is worth building was the question
+  the IC SCREEN (next entry) answered.
+  Booked via: WP-RECONCILE-SESSION-11-CLOSE.
+
+(no-code) — 2026-06-04 — WP-SIGNAL-QUALITY-VALUE-IC-SCREEN (T1, research-only, NEGATIVE)
+  Descriptive screen rather than full backtest. Banked
+  during this session (not previously banked) as the
+  cheap way to test whether QV factors have any pulse on
+  this universe BEFORE building a full XSEC backtest
+  (WP-SIGNAL-QUALITY-VALUE-XSEC-V1, the gated-on follow-
+  up from S10). Pre-empts that backtest; convention (c)
+  screen-before-backtest locked from this application.
+  Spec source: ad-hoc; no code artifact persisted.
+
+  Factor definitions (match what was RUN):
+  - QUALITY = equal-weight cross-sectional rank of: ROE,
+    profit_margin, FCF / total-assets, low debt/equity
+    (-D/E). 4 components.
+  - VALUE = equal-weight cross-sectional rank of: E/P,
+    B/P, FCF-yield (FCF / market-cap). 3 components.
+  - COMPOSITE = equal-weight(rank(QUALITY), rank(VALUE)).
+
+  Method: rank universe each period by the 3 composites
+  above. Compute IC (rank correlation between factor at
+  t and 12-month forward return at t+1) per period, then
+  mean + Newey-West-adjusted t-stat across periods.
+  Compute Q5-Q1 spread (top-quintile minus bottom-
+  quintile 12m forward return).
+
+  Results:
+  - QUALITY: mean 12m IC -0.028, NW t -0.85 (no pulse;
+    NOT significant either direction). TRAIN IC ~+0.008
+    (essentially zero).
+  - VALUE: mean 12m IC -0.093, NW t -2.08 (ANTI-
+    PREDICTIVE at borderline significance). High-value
+    tickers underperformed low-value -- consistent with
+    the bull regime favouring growth/momentum names over
+    cheap value.
+  - COMPOSITE: inherits Value sign (drags Quality null).
+  - Q5-Q1 12m spreads: -25% / -35% / -39% (Quality /
+    Value / Composite). All negative; Value worst.
+  - Only positive vintage: 2022 (early bull-window;
+    small sample). Every other rolling window negative.
+
+  Caveats logged: single-cycle test (2021-2026 bull
+  only); thin-train (~3-4 usable annual periods/ticker
+  due to L1 oldest-period thinning); IC framework
+  assumes cross-sectional rank stability period-over-
+  period which may understate signal in trend-
+  conditional regimes.
+
+  HEADLINE: NEGATIVE. No exploitable pulse from free
+  yfinance fundamentals on this universe over this
+  cycle. This is a NEGATIVE DESCRIPTIVE FEASIBILITY
+  SCREEN, deliberately NOT counted in the backtested-
+  refutation tally (which stays at 8 PRICE refutations:
+  6 long-only + 2 long-short -- see _project_state.md
+  LOCKED DECISIONS). Its value was pre-empting a full
+  backtest of WP-SIGNAL-QUALITY-VALUE-XSEC-V1 (now
+  CLOSED DEFERRED): refinement won't invert a negative
+  sign, so paying for the full build (or for paid
+  Finnhub) wasn't justified.
+
+  Decision flowing from this screen (locked at S11
+  close): fundamentals quality/value on liquid ASX-200
+  (free yfinance) closed DESCRIPTIVELY. Paid Finnhub
+  provisioning NOT justified -- the refinement won't
+  invert a negative sign; paying for cleaner data on a
+  signal that doesn't fire is paying twice for nothing.
+  THROUGH-LINE: both the price-only lever (8 backtested
+  refutations) and the fundamentals quality/value lever
+  (1 negative descriptive screen) died on the SAME
+  liquid ASX-200-survivor universe -> market efficiency
+  / liquidity is the common candidate killer -> next
+  alpha lever = out-of-universe (smaller-cap / less-
+  liquid ASX). Banked WP-DATA-SMALLCAP-FEASIBILITY-
+  PROBE as S12 primary.
+
+  Caveats kept honest: ONE cycle, FREE data, ONE factor
+  family, DESCRIPTIVE screen (not a backtest). NOT a
+  multi-cycle structural proof of fundamentals failure
+  on this universe. The screen is sufficient to
+  deprioritize hard but not to permanently close the
+  door. If the smallcap probe shows life on a different
+  factor family, revisit liquid-ASX fundamentals on
+  that family.
+  Booked via: WP-RECONCILE-SESSION-11-CLOSE.
+
+  (Reconcile commit not logged per established
+  convention; serves as the booking anchor for the two
+  research WPs above.)
