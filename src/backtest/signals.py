@@ -1,12 +1,17 @@
 """StockHub signal functions (extracted in WP-SIGNAL-MA-CROSSOVER-GRID-V1).
 
 Each signal function takes a price DataFrame (with `adj_close`) and
-returns a position series aligned to the input — values in {NaN, 0, 1}.
-NaN marks warm-up / undefined; the backtest engine slices from the
-first non-NaN row.
+returns a position series aligned to the input -- values in {NaN, 0, 1}
+for long-only, {NaN, -1, 0, +1} for long-short. NaN marks warm-up /
+undefined; the backtest engine slices from the first non-NaN row.
+
+Cross-sectional functions (WP-SIGNAL-MOMENTUM-CROSS-SECTIONAL-V1) take
+a panel (dict[str, DataFrame]) and return per-ticker series + rebalance
+metadata. They use the same {NaN, -1, 0, +1} alphabet per series.
 """
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 SHORT_WINDOW = 50
@@ -226,3 +231,146 @@ def mean_reversion_zscore_longshort_signal(df: pd.DataFrame,
         position.iloc[t] = float(new_pos)
         prev_pos = new_pos
     return position
+
+
+def momentum_cross_sectional_longshort_signal(
+    panel: dict[str, pd.DataFrame],
+    J: int,
+    skip: int = 21,
+    rebalance: str = "ME",
+    k: int = 18,
+    close_col: str = "adj_close",
+) -> tuple[
+    dict[str, pd.Series],
+    list[pd.Timestamp],
+    dict[pd.Timestamp, tuple[frozenset[str], frozenset[str]]],
+]:
+    """Cross-sectional momentum long-short signal (WP-SIGNAL-MOMENTUM-
+    CROSS-SECTIONAL-V1; Option B architecture).
+
+    Panel-in (dict[ticker -> DataFrame with trade_date, adj_close]),
+    per-ticker series-out, {NaN, -1, 0, +1}. Position changes ONLY at
+    rebalance bars; held constant between rebalances regardless of
+    intra-month rank shifts.
+
+    Rebalance bars: monthly month-ends mapped to the LAST actual
+    trading day <= each month-end in the UNION calendar across all
+    tickers in the panel. Duplicates collapsed.
+
+    Per-ticker formation return at rebalance rb (uses the ticker's own
+    calendar):
+        ix     = ticker_dates.get_loc(rb)
+        p_skip = closes[ix - skip]
+        p_then = closes[ix - skip - J]
+        lookback_return = (p_skip / p_then) - 1.0
+    Ticker is INELIGIBLE at rb if any of: rb not in its calendar,
+    ix < skip + J, p_then non-finite or <= 0.
+
+    Breadth: fixed top-k / bottom-k per rebalance (k=18 locked for V1).
+    Top-k by descending formation return -> +1. Bottom-k -> -1. Middle
+    and ineligible tickers -> 0. Deterministic tiebreak by ticker name
+    (ascending). If fewer than 2*k tickers are eligible at a rebalance,
+    that rebalance has EMPTY legs (no positions emitted that period).
+
+    Per-ticker signal series (length == len(panel[t])):
+        - NaN before the first rebalance that exists in t's calendar
+          (engine slices from first valid index).
+        - Each subsequent bar's position = leg-membership at the last
+          rebalance bar <= that bar's date.
+        - Ticker present in top set -> +1; in bottom set -> -1; else 0.
+    No carry-forward beyond a ticker's last available bar (the series
+    simply ends with df, per engine contract).
+
+    Args:
+        panel: dict[ticker -> DataFrame], each df sorted ascending by
+            trade_date with columns (trade_date, close_col). Caller
+            owns coercion + sort.
+        J: formation lookback in trading days (e.g. 63 / 126 / 252).
+        skip: skip-month gap in trading days (default 21 = 1 month,
+            Jegadeesh-Titman convention).
+        rebalance: pandas offset alias for the rebalance schedule.
+            "ME" = month-end (locked for V1; pandas 3.x renamed "M"
+            to "ME").
+        k: per-leg breadth (default 18 = decile of ~180 survivors).
+        close_col: which column to use for closes (default "adj_close").
+
+    Returns:
+        (signals, rebalance_dates, leg_by_rb)
+        signals: dict[ticker -> pd.Series] (float dtype, len = len(df_t)).
+        rebalance_dates: list[Timestamp] sorted ascending.
+        leg_by_rb: dict[rb_date -> (frozenset top tickers, frozenset
+            bottom tickers)].
+    """
+    all_dates = sorted({pd.Timestamp(d) for df in panel.values()
+                        for d in df["trade_date"]})
+    if not all_dates:
+        return ({t: pd.Series([], dtype=float) for t in panel}, [], {})
+    union_idx = pd.DatetimeIndex(all_dates)
+
+    month_ends = pd.date_range(union_idx.min(), union_idx.max(), freq=rebalance)
+    rebalance_dates: list[pd.Timestamp] = []
+    seen: set[pd.Timestamp] = set()
+    for m in month_ends:
+        candidates = union_idx[union_idx <= m]
+        if len(candidates) == 0:
+            continue
+        rb = pd.Timestamp(candidates[-1])
+        if rb in seen:
+            continue
+        seen.add(rb)
+        rebalance_dates.append(rb)
+
+    ticker_dates: dict[str, pd.DatetimeIndex] = {}
+    ticker_closes: dict[str, np.ndarray] = {}
+    for t, df in panel.items():
+        ticker_dates[t] = pd.DatetimeIndex(df["trade_date"])
+        ticker_closes[t] = df[close_col].values.astype(float)
+
+    leg_by_rb: dict[pd.Timestamp, tuple[frozenset[str], frozenset[str]]] = {}
+    for rb in rebalance_dates:
+        formations: dict[str, float] = {}
+        for t in panel:
+            dates_t = ticker_dates[t]
+            if rb not in dates_t:
+                continue
+            ix = int(dates_t.get_loc(rb))
+            if ix < skip + J:
+                continue
+            p_skip = ticker_closes[t][ix - skip]
+            p_then = ticker_closes[t][ix - skip - J]
+            if not np.isfinite(p_skip) or not np.isfinite(p_then) or p_then <= 0:
+                continue
+            formations[t] = (p_skip / p_then) - 1.0
+        if len(formations) < 2 * k:
+            leg_by_rb[rb] = (frozenset(), frozenset())
+            continue
+        items = sorted(formations.items(), key=lambda kv: (-kv[1], kv[0]))
+        top = frozenset(t for t, _ in items[:k])
+        bot = frozenset(t for t, _ in items[-k:])
+        leg_by_rb[rb] = (top, bot)
+
+    rebal_arr = np.array(rebalance_dates, dtype="datetime64[ns]")
+    signals: dict[str, pd.Series] = {}
+    for t in panel:
+        dates_t = ticker_dates[t]
+        sig = np.full(len(dates_t), np.nan, dtype=float)
+        cur_rb_ix = -1
+        dates_arr = dates_t.values
+        for i in range(len(dates_t)):
+            d = dates_arr[i]
+            while (cur_rb_ix + 1 < len(rebal_arr)
+                   and rebal_arr[cur_rb_ix + 1] <= d):
+                cur_rb_ix += 1
+            if cur_rb_ix < 0:
+                continue
+            rb = pd.Timestamp(rebal_arr[cur_rb_ix])
+            top, bot = leg_by_rb[rb]
+            if t in top:
+                sig[i] = 1.0
+            elif t in bot:
+                sig[i] = -1.0
+            else:
+                sig[i] = 0.0
+        signals[t] = pd.Series(sig, dtype=float)
+
+    return signals, list(rebalance_dates), leg_by_rb
