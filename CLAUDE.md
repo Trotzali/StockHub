@@ -22,19 +22,38 @@ Shell: PowerShell 5.1 on Windows 11 ARM64 (Snapdragon).
 1. **git commit messages**: do NOT use multi `-m` chains
    with backtick continuation. Use `git commit -F
    <tempfile>`; remove the tempfile before push.
-2. **File creation**: do NOT use `Set-Content -Encoding
-   utf8` (writes UTF-8 with BOM). Use the Write tool or
+2. [WINDOWS-ONLY, retires on Mac] **File creation**: do NOT
+   use `Set-Content -Encoding utf8` (writes UTF-8 with
+   BOM). Use the Write tool or
    `[System.IO.File]::WriteAllText` with
-   `[System.Text.UTF8Encoding]::new($false)`.
-3. **Benign noise**: LF→CRLF warnings on `git add` are
-   expected. `NativeCommandError` on `git push` with 2>&1
-   is cosmetic. Exit code is authoritative.
-4. **Python**: use `python` (3.12.10 ARM64, has pip).
-   Do NOT use `python3` (3.14, pip not bound).
-5. **Architecture is ARM64.** Many PyPI packages with
-   native C extensions lack `win_arm64` wheels.
+   `[System.Text.UTF8Encoding]::new($false)`. This is a
+   PowerShell-cmdlet-specific default — standard shell
+   redirection (`>`, `>>`) and Python's own file writes
+   are UTF-8 without a BOM by default on macOS, so the
+   underlying trap doesn't exist there. Still fine to keep
+   using the Write tool for consistency across both OSes.
+3. [WINDOWS-ONLY, likely retires on Mac] **Benign noise**:
+   LF→CRLF warnings on `git add` are expected.
+   `NativeCommandError` on `git push` with 2>&1 is
+   cosmetic. Exit code is authoritative. The CRLF warning
+   is driven by Windows' `core.autocrlf` behavior — not a
+   hard guarantee it disappears on Mac (depends on that
+   machine's own git config), so confirm empirically on
+   the first post-clone `git add` rather than assume.
+4. [FLIPS ON MAC] **Python**: use `python` (3.12.10 ARM64,
+   has pip). Do NOT use `python3` (3.14, pip not bound).
+   On macOS this reverses: there is no bare `python` on
+   PATH by default — use `python3` there instead.
+5. [WINDOWS-SPECIFIC LIST — re-verify on Mac, don't assume
+   parity] **Architecture is ARM64.** Many PyPI packages
+   with native C extensions lack `win_arm64` wheels.
    Confirmed gaps: psycopg2-binary, psycopg-binary,
-   pyarrow at modern versions. Pure-Python fine.
+   pyarrow at modern versions. Pure-Python fine. These are
+   win_arm64-specific gaps; PyPI's macOS arm64 (Apple
+   Silicon) wheel coverage is a different, generally much
+   better picture — re-check fresh with
+   `pip install --only-binary :all: <pkg>` on the Mac
+   before assuming any of these are still unavailable.
 6. **Pip install policy: always `--only-binary :all:`.**
    - Silent sdist fallback compiles from source and
      fails on this box.
@@ -42,34 +61,64 @@ Shell: PowerShell 5.1 on Windows 11 ARM64 (Snapdragon).
      to a stale major.
    Pip exit 0 is necessary but NOT sufficient. Sanity-
    check resolved versions vs current-stable before
-   pinning.
-7. **DB driver**: supabase-py only. No native PG drivers.
-8. **ASCII-only stdout in PowerShell scripts.**
-   PowerShell's default cp1252 codec crashes on Unicode
-   characters in stdout (`->`, em-dashes, Greek letters,
-   box-drawing). Python scripts that print to PowerShell
-   stdout must use ASCII equivalents (`->` not `→`, `--`
-   not `—`, `alpha` not `α`). Commit message bodies via
-   `git commit -F <tempfile>` are UTF-8 file writes per
-   item 2, so Unicode in commit messages is FINE — the
-   constraint is stdout only. Validated session 4: probe-
-   exit `UnicodeEncodeError` crash on `→` in
+   pinning. Keep this discipline on Mac too — the risk is
+   lower there (better arm64 wheel coverage) but not zero.
+7. [RE-EVALUATE ON MAC — not urgent] **DB driver**:
+   supabase-py only. No native PG drivers. This rule
+   exists *because of* item 5's win_arm64 wheel gap for
+   psycopg2-binary/psycopg-binary. On Apple Silicon those
+   packages generally do ship macOS arm64 wheels, so the
+   constraint that forced this decision may no longer
+   hold. Not a Phase 2 action item — supabase-py works
+   fine either way, and swapping drivers is a real
+   architectural change, not a migration task.
+8. [WINDOWS-ONLY, retires on Mac] **ASCII-only stdout in
+   PowerShell scripts.** PowerShell's default cp1252 codec
+   crashes on Unicode characters in stdout (`->`,
+   em-dashes, Greek letters, box-drawing). Python scripts
+   that print to PowerShell stdout must use ASCII
+   equivalents (`->` not `→`, `--` not `—`, `alpha` not
+   `α`). Commit message bodies via `git commit -F
+   <tempfile>` are UTF-8 file writes per item 2, so
+   Unicode in commit messages is FINE — the constraint is
+   stdout only. Validated session 4: probe-exit
+   `UnicodeEncodeError` crash on `→` in
    WP-SIGNAL-MA-CROSSOVER-V1 Phase A; full Phase B output
-   ran clean under ASCII-only discipline.
-9. **AV TLS interception as supabase-py SSL failure.**
-   If supabase-py reports `[SSL: CERTIFICATE_VERIFY_
-   FAILED]`, inspect the leaf cert's issuer before any
-   fix attempt. AV-product issuer org names (Norton,
-   Avast, ESET, Kaspersky, McAfee, Bitdefender, etc.)
-   indicate TLS interception: the AV re-signs every
-   cert with its private root, breaking certifi's
-   validation. Fix: OS-side toggle (Norton: Settings
-   -> Safe Web -> HTTPS scanning OFF). Do NOT pin
+   ran clean under ASCII-only discipline. Terminal.app/zsh
+   default to UTF-8 stdout, so this whole failure mode
+   doesn't exist on Mac — Unicode arrows/em-dashes/Greek
+   letters are safe there. Fine to keep ASCII-only as a
+   cross-OS style choice, but it stops being a correctness
+   requirement.
+9. [WINDOWS-ONLY, retires on Mac] **AV TLS interception as
+   supabase-py SSL failure.** If supabase-py reports `[SSL:
+   CERTIFICATE_VERIFY_FAILED]`, inspect the leaf cert's
+   issuer before any fix attempt. AV-product issuer org
+   names (Norton, Avast, ESET, Kaspersky, McAfee,
+   Bitdefender, etc.) indicate TLS interception: the AV
+   re-signs every cert with its private root, breaking
+   certifi's validation. Fix: OS-side toggle (Norton:
+   Settings -> Safe Web -> HTTPS scanning OFF). Do NOT pin
    certifi (tried WP-INFRA-CERTIFI-PIN session 7, no
    commit; same error across 2025.11.12 and 2026.4.22).
    Do NOT install `truststore` -- it silently accepts
    the MITM and exposes `SUPABASE_SERVICE_ROLE_KEY` to
    the AV. Surfaced + resolved session 7 (2026-05-23).
+   Norton doesn't exist on macOS — this whole class of
+   AV-TLS-interception failure shouldn't occur there. If a
+   cert error does show up on the Mac, inspect the issuer
+   fresh rather than assuming this same root cause.
+
+### Mac migration deltas (WP-MAC-MIGRATION-TOOLING, 2026-09-13)
+
+Full audit + runbook: `BRINGUP.md`. Short version — items 2,
+3, 8, 9 above are Windows/PowerShell-specific and retire on
+Mac; item 4 flips (`python3` not `python`); items 5 and 7
+need fresh verification on Mac rather than assumed parity.
+Items 1 and 6 carry over unchanged. No `.bat`/`.ps1` files
+are tracked in this repo (only inside the gitignored
+`.venv/`) and zero hardcoded `C:\Users\admin`-style paths
+exist in tracked code — nothing to patch for portability.
 
 ## Rule 0 — investigate before executing
 

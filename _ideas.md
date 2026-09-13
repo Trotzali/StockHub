@@ -84,6 +84,22 @@ WP-INFRA-SCHEDULER
   in scripts/logs/. Consider an exit-code-aware retry wrapper if
   silent failures bite.
 
+WP-INFRA-MIGRATE-SCHEDULE
+  Banked out of WP-MAC-MIGRATION-TOOLING (2026-09-13, Phase 2):
+  nightly non-interactive `node scripts/migrate-pack.mjs --auto`
+  (password from scripts/.migrate-pack.secret, gitignored) so the
+  laptop stays continuously protected rather than relying on
+  remembering to run a pack by hand. tjk-civil's reference
+  implementation already has the OS-level mechanics worked out
+  (scripts/schedule-pack.md there): Windows Task Scheduler for now
+  -- daily trigger, `node scripts/migrate-pack.mjs --auto`, "Start
+  in" = repo root -- and a launchd .plist for after the Mac move.
+  Not part of Phase 2's authorization (manual `migrate-pack.mjs`
+  runs only, for now); pick up once the Mac migration itself is
+  further along. Distinct from WP-INFRA-SCHEDULER above -- that one
+  is about the app's own daily signal-fetch job, this one is about
+  protecting the laptop's local-only files.
+
 WP-INFRA-YFUTILS-EXTEND-RETRY-WRAPPER
   Generalize the 3-attempt exponential backoff (1s/2s/4s
   delays) currently duplicated as fetch_with_retry() in
