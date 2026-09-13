@@ -31,3 +31,8 @@ secrets.toml
 Thumbs.db
 *.log
 /.commit-msg.tmp
+
+# Node (WP-MAC-MIGRATION-TOOLING -- migrate-pack.mjs/migrate-restore.mjs deps only)
+/node_modules/
+/.migrate-pack.secret
+/_migration-packs/

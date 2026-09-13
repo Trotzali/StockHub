@@ -1,0 +1,16 @@
+{
+  "name": "stockhub-migrate-tooling",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Node-only deps for scripts/migrate-pack.mjs / migrate-restore.mjs (WP-MAC-MIGRATION-TOOLING). StockHub itself is a Python project -- this package.json exists solely to pin the two zip/encrypt deps the migration tooling needs. No build step, no app code here.",
+  "type": "module",
+  "scripts": {
+    "migrate:pack": "node scripts/migrate-pack.mjs",
+    "migrate:pack:dry": "node scripts/migrate-pack.mjs --dry",
+    "migrate:restore": "node scripts/migrate-restore.mjs"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.17",
+    "archiver": "^7.0.1"
+  }
+}

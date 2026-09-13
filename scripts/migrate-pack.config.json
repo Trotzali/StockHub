@@ -1,0 +1,14 @@
+{
+  "_comment": "WP-MAC-MIGRATION-TOOLING -- shared config for migrate-pack.mjs / migrate-restore.mjs. Committed (no secrets). Ported from C:\\Users\\admin\\tjk-civil (2026-09-13 audit) -- reused unmodified except this file, per the reference implementation's own design (vaultRoot/project are the only things that should change to reuse the tooling on another repo).",
+  "vaultRoot": "Dev Vault",
+  "project": "stockhub",
+  "backupsSubfolder": "backups",
+  "dataSubfolder": "data",
+  "retentionCount": 7,
+  "passwordFile": ".migrate-pack.secret",
+  "fallbackLocalDir": "_migration-packs",
+  "driveMountCandidates": {
+    "win32": ["G:", "H:", "I:"],
+    "darwin": ["~/Library/CloudStorage"]
+  }
+}
