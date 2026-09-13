@@ -983,3 +983,121 @@ signals.py / borrow_tiering.py / validation harness touched.)
   (Reconcile commit not logged per established
   convention; serves as the booking anchor for the two
   research WPs above.)
+
+1829321 — 2026-07-02 — WP-DIAG-FACTOR-REGIME-CONFOUND
+  deep-history backfill (185 + ^AXJO)
+  Backfilled into this log at the SESSION 13 reconcile
+  (2026-09-13) -- SESSION 12 shipped this commit but was
+  never itself reconciled (no _timeline.md entry, no
+  build-log entry, no state-file closure) until now, a
+  ~2.3 month gap. Summary drawn straight from the
+  commit's own message, not reconstructed from other
+  context. Adds scripts/backfill_historical_deep.py:
+  yfinance period="max" backfill for the 185 ASX-200
+  survivors plus ^AXJO, into the existing prices table
+  via on_conflict=(ticker,trade_date) upsert. No DDL.
+  Reuses df_to_records + upsert_prices (chunked 500-row
+  batches). Idempotent re-runs by construction. Gating
+  commit: 488d247 (WP-RECONCILE-SESSION-11-CLOSE).
+  Motivation: session 12's regime-confound diagnostic
+  found the low-vol anomaly's sign partially regime-
+  dependent (DOWN buckets less-negative than UP) but
+  under-powered at N=6 DOWN forward-12m windows in the
+  2021-2025 sample; deep history (GFC 2008-09, 2011,
+  2015-16, COVID 2020, 2022) populates the DOWN bucket.
+  Results: 931,126 rows written; 166/186 tickers reached
+  OK (>=2000 rows, earliest bars ~1999-01-04 for pre-1999
+  listings); 18 WARN tickers are post-2018 listings with
+  no deep history; 2 tickers (IFL.AX, NSR.AX) returned 0
+  rows (likely delisted/renamed), existing rows untouched;
+  ^AXJO extended to 8495 bars (1992-11-23 to 2026-07-02).
+  Survivorship caveat (per the commit, mandatory at every
+  consumer): deep history on today's 185 survivors deletes
+  blown-up names, biasing a low-vol re-screen AGAINST the
+  low-vol hypothesis -- a positive result would be
+  conservative/robust, a negative result stays ambiguous
+  (can't separate "no anomaly" from "survivorship-eaten").
+  Refutation tally unchanged at 8. A same-session B5
+  multi-cycle low-vol re-screen probe was run and deleted
+  per Rule 0 (not persisted).
+  NOTE: this backfill entry does not reconstruct a full
+  SESSION 12 narrative (no other session-12 work is known
+  to this reconcile) -- it only records this one commit
+  accurately from its own message. Any further session-12
+  substance (if any exists beyond this commit) still needs
+  its own catch-up pass.
+  Booked via: WP-RECONCILE-SESSION-13 (backfill).
+
+ed19257 — 2026-09-13 — WP-MAC-MIGRATION-TOOLING
+  port migrate-pack/restore tooling from tjk-civil
+  Ports scripts/migrate-pack.mjs, migrate-restore.mjs,
+  lib/migrate-common.mjs from C:\Users\admin\tjk-civil
+  (reused per explicit instruction, not reinvented) and
+  config-shapes scripts/migrate-pack.config.json for
+  StockHub: vaultRoot "Dev Vault", project "stockhub" ->
+  G:\My Drive\Dev Vault\stockhub\backups\. Pack manifest
+  deliberately short (3 items vs tjk-civil's 8): .env
+  (required, 10 keys, no Vercel/other cloud copy),
+  results/ (optional, 1.6MB, cheap to rebuild from
+  Supabase but packed anyway), Claude Code memory/
+  (required, tolerates empty/missing -- confirmed empty
+  on this machine, first session for this project).
+  Confirmed by reading backfill_historical_deep.py during
+  the audit: ingested price history never touches local
+  disk at all -- upserts straight to Supabase -- so this
+  repo has no GB-scale local-data problem the way
+  tjk-civil did. Dropped two things from a pure port as
+  confirmed-inapplicable: the 7-script hardcoded-path
+  portability check (StockHub's tracked code has zero
+  hardcoded C:\Users\admin-style paths) and
+  launch-chrome-debug.sh generation (no such script
+  exists in this repo). Archive magic header changed to
+  "SHMPK1" (was tjk-civil's "TJKMPK1") so packs from the
+  two projects can never be cross-decrypted-and-
+  misinterpreted. Added minimal package.json (adm-zip
+  ^0.5.17, archiver ^7.0.1 -- same pinned ranges already
+  proven on this ARM64 box via tjk-civil), package-lock
+  .json, and .gitignore entries for node_modules/,
+  .migrate-pack.secret, _migration-packs/. Known, accepted
+  gap: npm audit flags adm-zip <=0.6.0 high-severity
+  (crafted-zip 4GB-allocation DoS; zip-slip path
+  traversal on extraction) -- not fixed by the breaking
+  0.6.1 bump because migrate-restore.mjs only ever feeds
+  AdmZip a buffer that already passed AES-256-GCM
+  authenticated decryption; no untrusted zip reaches the
+  vulnerable path without the archive password already
+  being compromised.
+  Gates: 1829321 (HEAD at start of this WP).
+
+e7763d7 — 2026-09-13 — WP-MAC-MIGRATION-TOOLING
+  BRINGUP.md + CLAUDE.md Mac-edition deltas
+  Adds BRINGUP.md: repo path, fresh-never-resume rule,
+  no-MCP/no-hooks note (global ~/.claude/settings.json's
+  PowerShell SessionStart hook and any ~/.claude.json MCP
+  servers are machine-level, out of this repo's pack),
+  full gotchas summary, pre-launch check block, tooling
+  notes, Ready-when checklist. Amends CLAUDE.md's
+  Environment items 1-9 in place (marked, not deleted,
+  per instruction): [WINDOWS-ONLY, retires on Mac] on
+  items 2/3/8/9; [FLIPS ON MAC] on item 4 (python ->
+  python3); [WINDOWS-SPECIFIC LIST / RE-EVALUATE] on
+  items 5/7 (win_arm64 wheel gaps and the supabase-py-
+  only DB driver rule that exists because of them --
+  Apple Silicon's arm64 wheel coverage is a different,
+  better picture). Items 1 and 6 unchanged. Banks
+  WP-INFRA-MIGRATE-SCHEDULE in _ideas.md: nightly
+  --auto scheduling (tjk-civil's "continuous protection")
+  deliberately left out of this WP's Phase 2 scope
+  (manual packing only, per authorization).
+  Real-world outcome (not a commit): first pack run
+  (node scripts/migrate-pack.mjs --auto) written to
+  G:\My Drive\Dev Vault\stockhub\backups\stockhub-
+  migrate-pack-20260913-195550.zip.enc (524.3 KB,
+  536835 bytes on disk, verified independently of the
+  script's own printout). Local write + G: mount
+  confirmed; cloud sync to torquaytroy@gmail.com left to
+  Troy's own Drive-UI check (same account-scoping gap
+  the TJK proof surfaced -- CC's Drive API access is
+  scoped to admin@tjkcivil.com.au and can't see the
+  personal account Drive for Desktop actually syncs).
+  Gates: ed19257.

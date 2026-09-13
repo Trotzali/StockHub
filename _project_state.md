@@ -347,6 +347,27 @@ realistic thin-ADV slippage model + survivorship/delisting audit
 + data-coverage characterisation). See "Immediate queue —
 session 12" below.)
 
+Gap discovered at SESSION 13 reconcile (2026-09-13): SESSION 12
+(2026-07-02) shipped WP-DIAG-FACTOR-REGIME-CONFOUND (1829321,
+"deep-history backfill (185 + ^AXJO)", gating commit 488d247) but
+was NEVER closed/reconciled -- no SESSION 12 entry exists in
+_timeline.md, no build-log entry, no closure here. ~2.3 month gap
+between that commit and this reconcile. NOT detailed beyond the
+commit's own message (see _build_log.md entry backfilled this
+reconcile) -- this reconcile is scoped to WP-MAC-MIGRATION-TOOLING
+(per explicit instruction) and this terminal has no first-hand
+context beyond what the commit itself says (deep-history backfill
+for the low-vol regime-confound diagnostic; refutation tally
+unchanged at 8; survivorship caveat noted in the script docstring).
+Any locked decisions/tally implications from that WP still need a
+proper session-12-catch-up pass -- flagged so the state files don't
+silently misrepresent `git log`, not fully absorbed here.
+
+SESSION 13 opens (2026-09-13) with an out-of-band request instead
+of the queued primary (WP-DATA-SMALLCAP-FEASIBILITY-PROBE remains
+NOT STARTED, still gating the out-of-universe arc) -- see "Closed
+in SESSION 13" below and BRINGUP.md for WP-MAC-MIGRATION-TOOLING.
+
 Closed in SESSION 1:
   WP-BOOTSTRAP-REPO-INIT              — 73b2c8d
   WP-RECONCILE-POST-BOOTSTRAP         — d57dbcd
@@ -549,6 +570,57 @@ Closed in SESSION 11 (2026-06-04; on-schedule reconcile):
                                         sign; refinement via paid
                                         Finnhub also not justified)
   WP-RECONCILE-SESSION-11-CLOSE       — (see `git log -1 --oneline`)
+
+Closed in SESSION 12 (2026-07-02) — backfilled at SESSION 13
+reconcile, ~2.3 months late (see gap note above):
+  WP-DIAG-FACTOR-REGIME-CONFOUND      — 1829321 (gating: 488d247).
+                                        NOT detailed beyond the
+                                        commit's own message -- see
+                                        _build_log.md entry backfilled
+                                        this reconcile; own full
+                                        reconcile pass still owed.
+  (SESSION 12 never got its own close/reconcile -- no _timeline.md
+  entry exists for it. This backfill only records the one commit;
+  it does not retroactively reconstruct a full session narrative.)
+
+Closed in SESSION 13 (2026-09-13):
+  WP-MAC-MIGRATION-TOOLING            — ed19257, e7763d7 (out-of-band
+                                        request, not on the S11 queue).
+                                        Phase 1 read-only
+                                        audit found StockHub has no
+                                        GB-scale local-data problem --
+                                        ingested price history lives in
+                                        Supabase, never touches disk;
+                                        zero hardcoded paths / .bat/.ps1
+                                        scripts in tracked code. Phase 2
+                                        ported + config-shaped tjk-civil's
+                                        migrate-pack.mjs/migrate-restore.mjs
+                                        tooling (short 3-item manifest:
+                                        .env, results/, Claude memory);
+                                        added package.json (adm-zip,
+                                        archiver); annotated CLAUDE.md's
+                                        9 environment rules in place with
+                                        Mac status ([WINDOWS-ONLY retires]
+                                        /[FLIPS]/[RE-EVALUATE]); wrote
+                                        BRINGUP.md. First real pack
+                                        written (not a commit):
+                                        G:\My Drive\Dev Vault\stockhub\
+                                        backups\stockhub-migrate-pack-
+                                        20260913-195550.zip.enc (524KB) --
+                                        local write + G: mount confirmed;
+                                        cloud sync to torquaytroy@gmail.com
+                                        left to Troy's own Drive-UI check
+                                        (same account-scoping gap the TJK
+                                        proof surfaced -- CC's Drive API
+                                        access can't see that account).
+                                        Banked WP-INFRA-MIGRATE-SCHEDULE
+                                        in _ideas.md (nightly --auto
+                                        scheduling, out of this WP's
+                                        authorization).
+  WP-RECONCILE-MILESTONE-SESSION-13   — (see `git log -1 --oneline`;
+                                        mid-session reconcile, NOT a
+                                        session close -- S11/S13
+                                        immediate queue remains open)
 
 See _build_log.md for commit details.
 
@@ -797,9 +869,13 @@ Banked WPs (session 11 outcomes):
                                     amendment as thematic bullets in
                                     CLAUDE.md Rules block.
 
-Immediate queue — session 12:
+Immediate queue — carried forward into session 13 (session 12
+diverted into the ad hoc WP-DIAG-FACTOR-REGIME-CONFOUND instead
+and was never reconciled -- see "Closed in SESSION 12" above;
+session 13 itself opened with the ad hoc WP-MAC-MIGRATION-TOOLING,
+now reconciled -- see "Closed in SESSION 13" above). Every item
+below is still NOT STARTED:
 
-  - Reconcile (this WP) -- mandatory first action, landing now.
   - WP-DATA-SMALLCAP-FEASIBILITY-PROBE (PRIMARY) -- gating out-
     of-universe investigation per the S11 through-line. Phase A
     read-only: universe definition (ASX 300 ex-200? micro-caps?
@@ -878,31 +954,45 @@ Permanent gotchas — bake into every CC prompt on this box.
      - Single -m with embedded \n via $msg = @"...`n...`n..."@ ; git commit -m $msg
      - git commit -F <tempfile>, removing the tempfile before any push verification
 
-2. File creation with UTF-8
+2. [WINDOWS-ONLY, retires on Mac] File creation with UTF-8
    `Set-Content -Encoding utf8` writes UTF-8 WITH BOM on PS 5.1.
    Prefer the Write tool, or use:
      [System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false))
+   PowerShell-cmdlet-specific default — standard shell redirection
+   and Python's own file writes are UTF-8 without a BOM by default
+   on macOS, so this trap doesn't exist there.
 
-3. Benign noise to ignore
+3. [WINDOWS-ONLY, likely retires — confirm on Mac] Benign noise to ignore
    - LF→CRLF warnings on `git add` (Windows core.autocrlf default)
    - NativeCommandError text on `git push` when stderr is redirected
      — exit code is authoritative
+   The CRLF warning is driven by Windows' core.autocrlf; not a hard
+   guarantee it disappears on Mac (depends on that machine's git
+   config) — confirm empirically on the first post-clone `git add`.
 
-4. Python
+4. [FLIPS ON MAC] Python
    Use `python` (3.12, has pip bound). Do NOT use `python3` (3.14, pip not bound).
+   On macOS this reverses: no bare `python` on PATH by default — use `python3`.
 
-5. Shell
+5. [WINDOWS-ONLY] Shell
    PowerShell 5.1, not Git Bash. Use New-Item / Set-Location / Get-Location
    for filesystem ops; avoid bash idioms like `mkdir -p` heredocs piped to commands.
+   On Mac: zsh/bash is the native shell — standard Unix idioms
+   (`mkdir -p`, heredocs, pipes) are the norm there, not something
+   to avoid.
 
-6. Architecture (CRITICAL — surfaced WP-DEV-ENV-SETUP)
+6. [WINDOWS-SPECIFIC LIST — re-verify on Mac, don't assume parity]
+   Architecture (CRITICAL — surfaced WP-DEV-ENV-SETUP)
    Windows 11 on ARM64 (Snapdragon). Python 3.12.10 is the ARM64
    build; all venvs inherit this. Many PyPI packages with native
    C extensions have wheel-supply gaps for win_arm64 — confirmed
    gaps include psycopg2-binary, psycopg-binary (all versions),
    and pyarrow at modern versions. Pure-Python packages are fine.
    Always include "what arch is this box" in any new-project
-   Phase A bootstrap inventory.
+   Phase A bootstrap inventory. These are win_arm64-specific gaps;
+   macOS arm64 (Apple Silicon) wheel coverage on PyPI is generally
+   much better — re-check fresh with `pip install --only-binary
+   :all: <pkg>` on the Mac rather than assuming these gaps carry over.
 
 7. Pip install policy
    Always use `--only-binary :all:` for installs. Failure modes:
@@ -913,16 +1003,23 @@ Permanent gotchas — bake into every CC prompt on this box.
          Pip's exit 0 is necessary but NOT sufficient. Always
          sanity-check installed versions against current-stable
          expectations before pinning to requirements.txt.
+   Keep this discipline on Mac too — lower risk there (better arm64
+   wheel coverage) but not zero.
 
-8. DB driver policy
+8. [RE-EVALUATE ON MAC — not urgent] DB driver policy
    supabase-py (REST/HTTPS) only. No native PG drivers — psycopg2-binary
    and psycopg-binary lack win_arm64 wheels at all versions. Our
    workload fits PostgREST cleanly: bulk inserts via .insert([...])
    chunked, range queries via .select().gte().lte(), analytics
    client-side in pandas. WP-DB-DIRECT-SQL-ESCAPE-HATCH banked for
-   the day a workload genuinely needs ad-hoc SQL.
+   the day a workload genuinely needs ad-hoc SQL. This rule exists
+   *because of* item 6's win_arm64 gap — on Apple Silicon,
+   psycopg2-binary generally does ship macOS arm64 wheels, so the
+   constraint may no longer hold there. Not an action item;
+   supabase-py works fine either way and swapping drivers is a real
+   architectural change, not a migration task.
 
-9. UI stack ARM64 risk
+9. [RE-VERIFY ON MAC — may not apply at all] UI stack ARM64 risk
    streamlit 1.x hard-requires pyarrow, which has incomplete
    win_arm64 wheel coverage. WP-UI-FRONTEND-STACK-ARM64-RESOLUTION
    is gating work for the UI arc. Resolution paths (rough preference):
@@ -931,7 +1028,11 @@ Permanent gotchas — bake into every CC prompt on this box.
      - Install x64 Python alongside, run UI under emulation
      - Build pyarrow from source (last resort)
    DO NOT pin streamlit==0.8 as a "workaround" — that's
-   semantic poison.
+   semantic poison. PyPI's pyarrow generally ships macOS arm64
+   wheels, so this entire gating problem may simply not exist on
+   the Mac — re-check with a plain `pip install --only-binary :all:
+   pyarrow` there before carrying any of the above resolution paths
+   forward.
 
 10. Pandas 3.x .stack() semantics (surfaced WP-DATA-YFINANCE-FETCHER)
     The venv runs pandas==3.0.3. The new .stack() semantics require
@@ -963,7 +1064,7 @@ Permanent gotchas — bake into every CC prompt on this box.
     and T2's V-walk over T1's fetcher push. Fast-forward only —
     if the pull would require a merge, STOP and report instead.
 
-14. Norton AV TLS interception (surfaced SESSION 7)
+14. [WINDOWS-ONLY, retires on Mac] Norton AV TLS interception (surfaced SESSION 7)
     Norton SSL/TLS scanning toggle at Norton Settings → Safe Web →
     HTTPS scanning is OFF as of 2026-05-23. Do NOT re-enable — it
     MITM-terminates upstream TLS and re-signs every cert with
@@ -995,3 +1096,30 @@ Permanent gotchas — bake into every CC prompt on this box.
     Implication: future Supabase key rotations require new-key-
     migration provisioning effort, not the trivial dashboard click
     assumed at S7 banking time.
+
+16. Mac migration tooling (surfaced/shipped WP-MAC-MIGRATION-TOOLING,
+    SESSION 13, 2026-09-13)
+    Full runbook: BRINGUP.md (repo root). Audit found no GB-scale
+    local-data problem — ingested price history (185 ASX tickers +
+    ^AXJO deep backfill) lives entirely in Supabase, never touches
+    disk; zero hardcoded C:\Users\admin-style paths and zero
+    .bat/.ps1 scripts in tracked code. Pack/restore tooling ported
+    from C:\Users\admin\tjk-civil, config-shaped in
+    scripts/migrate-pack.config.json (vaultRoot "Dev Vault", project
+    "stockhub" -> G:\My Drive\Dev Vault\stockhub\backups\). Manifest:
+    .env (required, 10 keys, NO Vercel or other cloud copy — laptop-
+    only), results/ (optional, cheap to rebuild from Supabase but
+    packed anyway), Claude Code memory/ (required, tolerates
+    empty/missing). Password: scripts/.migrate-pack.secret
+    (gitignored) via `node scripts/migrate-pack.mjs --set-password`;
+    pack via `node scripts/migrate-pack.mjs [--auto]`. First real
+    pack confirmed written locally to the G: mount
+    (stockhub-migrate-pack-20260913-195550.zip.enc, 524KB); cloud
+    sync is Troy's own Drive-UI check (Drive for Desktop syncs
+    torquaytroy@gmail.com — CC's Drive API access is scoped to
+    admin@tjkcivil.com.au and can't see it, same gap the TJK proof
+    surfaced). See CLAUDE.md's per-rule Mac-status annotations
+    (items 2/3/4/6/7/8/9 above, mirroring CLAUDE.md items 2/3/4/5/7/8/9)
+    for what retires/flips/needs re-verification on the Mac.
+    Nightly `--auto` scheduling NOT wired up — banked as
+    WP-INFRA-MIGRATE-SCHEDULE in _ideas.md.

@@ -2047,3 +2047,143 @@ IMMEDIATE QUEUE (SESSION 12):
     sleeve; runs in parallel with smallcap arc.
   - Stretch: WP-SIGNAL-MOMENTUM-XSEC-QUINTILE-V1
     (breadth robustness; low prior post cross-test).
+
+═══════════════════════════════════════════════════════
+SESSION 13 — 2026-09-13 (AEST)
+═══════════════════════════════════════════════════════
+
+OPEN
+  Opened with HEAD = 1829321. Note: SESSION 12's own
+  entry does not exist in this file -- that session
+  (2026-07-02) shipped exactly one commit, 1829321
+  WP-DIAG-FACTOR-REGIME-CONFOUND (deep-history backfill,
+  185 + ^AXJO; gating commit 488d247), and was never
+  reconciled: no timeline entry, no build-log entry, no
+  _project_state.md closure, until backfilled as part of
+  this session's reconcile (~2.3 month gap). Same pattern
+  as the SESSION 1/2 SHA-backfill precedent above -- a
+  later session's open hygiene step patches an earlier
+  gap rather than inserting a fabricated out-of-order
+  entry. Full detail: _build_log.md's 1829321 entry
+  (summary drawn only from that commit's own message --
+  no other SESSION 12 context is known to this session,
+  so no fuller SESSION 12 narrative is reconstructed here).
+
+  This session itself opened with an out-of-band request
+  (Mac-migration prep) rather than the S11-queued primary
+  (WP-DATA-SMALLCAP-FEASIBILITY-PROBE, still NOT STARTED --
+  carried forward, see _project_state.md immediate queue).
+  Terminal not specified this session.
+
+WP-MAC-MIGRATION-TOOLING (Phase 1 + Phase 2)
+  Two-phase migration-prep WP: get StockHub ready for a
+  Windows -> Mac move, GitHub = code / Google Drive
+  "Dev Vault/stockhub/" = data + encrypted backups.
+
+  Phase A (read-only audit):
+  - git status --ignored + ls-files --others: no silent-
+    exclusion gaps. (a) env/secrets: .env only, 10 keys
+    (Supabase x8, Finnhub, Alpha Vantage) -- confirmed
+    NO Vercel or other cloud copy, laptop-only. (b) local
+    .claude config: none in-repo (no project .claude/
+    directory). (c) real local data -- confirmed this is
+    NOT the GB-scale problem tjk-civil had: read
+    scripts/backfill_historical_deep.py directly and
+    confirmed the 185-ticker + ^AXJO deep-history ingest
+    upserts straight to Supabase, never touches local
+    disk. Only local-only real data is results/ (1.6MB,
+    32 backtest-output CSVs) -- cheap to rebuild (reads
+    from Supabase, no external API calls). (d) junk:
+    .venv/ (187MB), four __pycache__/ dirs.
+  - Zero hardcoded C:\Users\admin-style paths in tracked
+    code (only narrative mentions in the four markdown
+    state files); zero tracked .bat/.ps1 scripts (only
+    inside gitignored .venv/). Materially simpler
+    portability case than tjk-civil's 7-script fix.
+  - Claude Code memory folder located and path-key
+    algorithm verified against this session's own live
+    folder (C--Users-admin-Projects-StockHub) -- exists
+    but EMPTY (first session for this project's memory).
+  - WP-INFRA-SCHEDULER (banked _ideas.md idea for a daily
+    fetch_yfinance.py job) confirmed NEVER SHIPPED --
+    absent from _build_log.md, and `schtasks /query`
+    confirmed no actual scheduled task exists on this
+    machine. Nothing to port on that front.
+  - Drafted BRINGUP.md content (not committed this phase).
+
+  Phase B (authorised, executed):
+  - Ported + config-shaped tjk-civil's migrate-pack.mjs /
+    migrate-restore.mjs / lib/migrate-common.mjs for
+    StockHub (vaultRoot "Dev Vault", project "stockhub").
+    Pack manifest short by design (3 items): .env
+    (required), results/ (optional, packed anyway per
+    instruction), Claude memory (required, tolerates
+    empty). Dropped the tjk-civil-specific 7-script
+    portability check and launch-chrome-debug.sh
+    generator (both confirmed inapplicable in Phase A).
+    Magic header changed to "SHMPK1" to prevent cross-
+    project pack confusion. Added package.json (adm-zip
+    ^0.5.17, archiver ^7.0.1), package-lock.json,
+    .gitignore entries. npm audit's adm-zip high-severity
+    finding accepted with reasoning documented (GCM-
+    authenticated decrypt gates the vulnerable extraction
+    path) rather than silently ignored or force-fixed.
+    Committed ed19257, pushed.
+  - Committed BRINGUP.md + CLAUDE.md Mac-edition deltas
+    (items marked in place -- [WINDOWS-ONLY retires] /
+    [FLIPS] / [RE-EVALUATE] -- not deleted) + banked
+    WP-INFRA-MIGRATE-SCHEDULE in _ideas.md. Committed
+    e7763d7, pushed.
+  - Dry run clean (node scripts/migrate-pack.mjs --dry):
+    manifest matched Phase A exactly, G:\My Drive
+    detected, backups path resolved to the specified
+    outputDir.
+  - Troy set the archive password out-of-band
+    (scripts/.migrate-pack.secret, gitignored).
+  - First real pack run (--auto): stockhub-migrate-pack-
+    20260913-195550.zip.enc, 524.3KB, written to
+    G:\My Drive\Dev Vault\stockhub\backups\. Verified
+    independently (ls -la, byte count matched the
+    script's own report exactly). git status clean
+    throughout -- password file and pack both stayed
+    outside/ignored by the repo tree.
+  - NOT verified: actual cloud sync to torquaytroy@
+    gmail.com. Same account-scoping gap the TJK proof
+    surfaced -- Drive for Desktop on this machine syncs
+    the personal account; this session's Drive API access
+    is scoped to admin@tjkcivil.com.au and can't see it.
+    Left to Troy's own Drive-UI confirmation, explicitly
+    not claimed as cloud-verified in the report.
+  - NOT run: migrate-restore.mjs --dry smoke test against
+    the real pack -- the non-TTY password prompt in
+    migrate-common.mjs echoes its input back to stdout by
+    design, which would have printed the archive password
+    into this session's own transcript. Left as a manual
+    step for Troy to run in a real terminal if wanted.
+
+RECONCILE (this WP, landing now):
+  _build_log.md: backfilled 1829321 (SESSION 12 gap) +
+    added ed19257 / e7763d7 entries.
+  _project_state.md: CURRENT WP section updated with the
+    SESSION 12 gap note + "Closed in SESSION 12/13"
+    listings; ENVIRONMENT NOTES items 2/3/4/5/6/7/8/9/14
+    annotated with Mac status (mirroring CLAUDE.md); new
+    item 16 added (Mac migration tooling pointer); the
+    banked "Immediate queue" re-labelled to session 13,
+    still fully NOT STARTED.
+  _timeline.md: this entry.
+  _ideas.md: WP-INFRA-MIGRATE-SCHEDULE already banked in
+    commit e7763d7 -- no further edit needed here.
+
+HEAD before this reconcile commit: e7763d7 (substantive).
+Reconcile commit itself: WP-RECONCILE-MILESTONE-SESSION-13
+(see `git log -1 --oneline`) -- named MILESTONE, not
+-CLOSE, since this is a mid-session reconcile scoped to
+WP-MAC-MIGRATION-TOOLING only, not a full session close.
+
+SESSION 13 STATUS: NOT CLOSED. WP-MAC-MIGRATION-TOOLING is
+done and reconciled; the S11/S13 immediate queue (WP-DATA-
+SMALLCAP-FEASIBILITY-PROBE PRIMARY + the four other banked
+items) remains fully open and untouched. No TERMINAL MAP /
+PRODUCTION STATE AT CLOSE section written -- this was a
+mid-session milestone reconcile, not a session close.
