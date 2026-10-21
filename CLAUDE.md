@@ -9,7 +9,7 @@ focuses on the specific task.
 - StockHub — ASX stock screening platform
 - Repo: https://github.com/Trotzali/StockHub
 - Prod branch: `master`
-- Working dir: C:\Users\admin\Projects\StockHub
+- Working dir: /Users/trot/code/StockHub
 - Stack: Python 3.12 ARM64 venv, Supabase free tier
   (supabase-py over HTTPS only), Plotly, yfinance +
   Finnhub + Alpha Vantage
@@ -17,11 +17,28 @@ focuses on the specific task.
 
 ## Environment
 
-Shell: PowerShell 5.1 on Windows 11 ARM64 (Snapdragon).
+Shell: zsh on macOS (Apple Silicon) since the Mac move
+2026-10-21. Python is `python3` (no bare `python` on PATH).
 
 1. **git commit messages**: do NOT use multi `-m` chains
    with backtick continuation. Use `git commit -F
    <tempfile>`; remove the tempfile before push.
+7. [RE-EVALUATE ON MAC — not urgent] **DB driver**:
+   supabase-py only. No native PG drivers. This rule
+   exists *because of* item 5's win_arm64 wheel gap for
+   psycopg2-binary/psycopg-binary. On Apple Silicon those
+   packages generally do ship macOS arm64 wheels, so the
+   constraint that forced this decision may no longer
+   hold. Not a Phase 2 action item — supabase-py works
+   fine either way, and swapping drivers is a real
+   architectural change, not a migration task.
+
+### LEGACY (old Windows box)
+
+Old Windows machine — superseded by the Mac move
+2026-10-21. Kept for history; numbering unchanged so
+cross-references still resolve.
+
 2. [WINDOWS-ONLY, retires on Mac] **File creation**: do NOT
    use `Set-Content -Encoding utf8` (writes UTF-8 with
    BOM). Use the Write tool or
@@ -63,15 +80,6 @@ Shell: PowerShell 5.1 on Windows 11 ARM64 (Snapdragon).
    check resolved versions vs current-stable before
    pinning. Keep this discipline on Mac too — the risk is
    lower there (better arm64 wheel coverage) but not zero.
-7. [RE-EVALUATE ON MAC — not urgent] **DB driver**:
-   supabase-py only. No native PG drivers. This rule
-   exists *because of* item 5's win_arm64 wheel gap for
-   psycopg2-binary/psycopg-binary. On Apple Silicon those
-   packages generally do ship macOS arm64 wheels, so the
-   constraint that forced this decision may no longer
-   hold. Not a Phase 2 action item — supabase-py works
-   fine either way, and swapping drivers is a real
-   architectural change, not a migration task.
 8. [WINDOWS-ONLY, retires on Mac] **ASCII-only stdout in
    PowerShell scripts.** PowerShell's default cp1252 codec
    crashes on Unicode characters in stdout (`->`,
@@ -137,7 +145,7 @@ Every prompt has Phase A and Phase B.
 Every commit is a single atomic Bash chain (one tool
 call, chained with `&&`):
 
-1. `cd "C:/Users/admin/Projects/StockHub"`
+1. `cd "/Users/trot/code/StockHub"`
 2. `git status -s` — pre-stage assertion (only expected
    paths should appear)
 3. `git check-ignore -v <new-paths>` — silent-ignore
@@ -231,7 +239,9 @@ Closed WPs migrate to `_build_log.md` with the commit SHA.
 Every CC report starts AND ends with:
 
     TERMINAL: T<n>
-    TIMESTAMP: <YYYY-MM-DD HH:MM AEST>
+    TIMESTAMP: <YYYY-MM-DD HH:MM AEST|AEDT>
+
+Melbourne time (AEST/AEDT), taken from the clock.
 
 Plus WP at the top and HEAD + STATUS at the bottom
 (PASS / FAIL / RECON COMPLETE etc.).
@@ -251,6 +261,16 @@ Plus WP at the top and HEAD + STATUS at the bottom
   probes, don't speculate.
 - Warn proactively about context compaction at natural
   break points.
+
+## RR (Revolution kit)
+This project uses RR, Trot's kit at ~/code/revolution-kit (GitHub: Trotzali/revolution-kit).
+- Where the kit and StockHub's own rules disagree, StockHub wins. Differences are listed, neither side is changed.
+- Before building any feature, check the kit's CATALOG.md; if something fits, copy its folder in — never import or link.
+- Anything that would help another app becomes one LESSONS.md line: "- YYYY-MM-DD · Topic · the lesson · StockHub".
+- Standing rules Trot confirms directly (not relayed) are written to RR by the rulings terminal (T2): a dated line in how-we-work/CHANGES.md plus the matching how-we-work file, in the same report.
+- RR saves happen from the Mac only, via bash ~/code/revolution-kit/kit-save.sh. The orchestrator chat never saves to RR: it emits "RR LESSON:" / "RR CHANGE:" lines and a Mac terminal saves them.
+- Never in the kit: secrets or keys (env names only), client or customer data, real prices, people's names, emails, phones, addresses, ABNs.
+- A report that wrote to RR ends with "RR ✚" quoting what was added; ★ on big ones. Only walked features go into features/, added only by the kit librarian.
 
 ## What every per-prompt block should still contain
 
