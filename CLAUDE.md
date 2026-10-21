@@ -23,6 +23,16 @@ Shell: zsh on macOS (Apple Silicon) since the Mac move
 1. **git commit messages**: do NOT use multi `-m` chains
    with backtick continuation. Use `git commit -F
    <tempfile>`; remove the tempfile before push.
+6. **Pip install policy: always `--only-binary :all:`.**
+   - Silent sdist fallback compiles from source and
+     fails on this box.
+   - Silent resolver back-walk: pip exits 0 but resolves
+     to a stale major.
+   Pip exit 0 is necessary but NOT sufficient. Sanity-
+   check resolved versions vs current-stable before
+   pinning. Keep this discipline on Mac too — the risk is
+   lower there (better arm64 wheel coverage) but not zero.
+   Current rule on the Mac (Trot ruling 2026-10-21).
 7. [RE-EVALUATE ON MAC — not urgent] **DB driver**:
    supabase-py only. No native PG drivers. This rule
    exists *because of* item 5's win_arm64 wheel gap for
@@ -71,15 +81,6 @@ cross-references still resolve.
    better picture — re-check fresh with
    `pip install --only-binary :all: <pkg>` on the Mac
    before assuming any of these are still unavailable.
-6. **Pip install policy: always `--only-binary :all:`.**
-   - Silent sdist fallback compiles from source and
-     fails on this box.
-   - Silent resolver back-walk: pip exits 0 but resolves
-     to a stale major.
-   Pip exit 0 is necessary but NOT sufficient. Sanity-
-   check resolved versions vs current-stable before
-   pinning. Keep this discipline on Mac too — the risk is
-   lower there (better arm64 wheel coverage) but not zero.
 8. [WINDOWS-ONLY, retires on Mac] **ASCII-only stdout in
    PowerShell scripts.** PowerShell's default cp1252 codec
    crashes on Unicode characters in stdout (`->`,
